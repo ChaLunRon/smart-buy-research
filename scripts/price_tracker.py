@@ -21,17 +21,14 @@ v2 相比 v1 新增：
 
 用法：
 
-  # 1. 添加一条价格记录（含国补）
-  python price_tracker.py add \\
-      --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 \\
-      --promo 100 --shipping 0 --subsidy-amount 975 \\
-      --note "国补15%已含" --member-price 5690 --member-type "Plus"
+   # 1. 添加一条价格记录（含国补）
+   python price_tracker.py add --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 --promo 100 --shipping 0 --subsidy-amount 975 --note "国补15%已含" --member-price 5690 --member-type "Plus"
 
-  # 2. 生成比价表（从 records.json 读取）
-  python price_tracker.py report --input records.json
+   # 2. 生成比价表（从 records.json 读取）
+   python price_tracker.py report --input records.json
 
-  # 3. 生成比价表（从 stdin 读取 JSON 数组）
-  cat prices.json | python price_tracker.py report
+   # 3. 生成比价表（从 stdin 读取 JSON 数组）
+   python price_tracker.py report < prices.json
 
 输入 JSON 格式（records.json）：
 [
