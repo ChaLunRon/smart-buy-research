@@ -23,6 +23,9 @@ import urllib.parse
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
 
+# 单次 HTTP 请求超时（秒）。见 _get() 中的说明。
+REQUEST_TIMEOUT = 25
+
 # B站前端固定的 64 位混淆表
 MIXIN_KEY_ENC_TAB = [
     46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
@@ -39,7 +42,9 @@ def _get(url, referer="https://www.bilibili.com/"):
         "Accept": "application/json, text/plain, */*",
         "Accept-Language": "zh-CN,zh;q=0.9",
     })
-    with urllib.request.urlopen(req, timeout=25) as r:
+    # 25s：B站接口在跨境/弱网下偶有长尾延迟，过短会误判为「读不到」，
+    # 过长则会在风控静默丢包时卡死。25s 是实测的折中值。
+    with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as r:
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
