@@ -1,15 +1,29 @@
 # -*- coding: utf-8 -*-
 """
 微信公众号文章提取器 — 免登录、纯 HTTP。
+
 已验证：浏览器 UA + 直接请求 https://mp.weixin.qq.com/s/<id> 即可拿到完整正文。
+
+⚠️ 合规前提：
+  mp.weixin.qq.com/robots.txt 的内容是 `User-Agent: * -> Disallow: /`，
+  Allow 白名单不含 /s/。也就是说本脚本的请求路径在 robots.txt 层面是被
+  明确禁止的。
+
+  因此本脚本的定位是：**仅供用户本人低频读取自己有权访问的单篇文章**
+  （不批量、不绕过验证、不并发）。批量抓取请改用授权渠道（自己的公众号
+  后台导出、付费数据平台等）。
+
+  调用方有义务在批量使用前取得用户明确同意，并说明这一限制。
 
 用法:
     python fetch_wechat_article.py <url> [--json out.json]
 """
+import argparse
 import sys
 import re
 import json
 import urllib.request
+import urllib.error
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
@@ -21,18 +35,35 @@ HEADERS = {
     "Accept-Encoding": "identity",
 }
 
-# 命中这些说明被风控/文章失效
+# 命中这些说明被风控/文章失效。
+# 注意：只在**正文容器缺失**时才会真正判定为被拦（见 extract()），
+# 所以正常文章正文里出现这些词不会误报。标记本身仍要尽量具体——
+# 「参数错误」这种通用词单独出现时歧义太大，改成完整串。
 BLOCK_MARKERS = [
     "环境异常", "完成验证", "去验证", "点击验证",
-    "参数错误", "该内容已被发布者删除", "此内容因违规无法查看",
-    "该公众号已迁移",
+    "参数错误，请返回首页", "该内容已被发布者删除", "此内容因违规无法查看",
+    "该公众号已迁移", "请在微信客户端打开链接", "此内容发送失败无法查看",
 ]
 
 
+class FetchError(Exception):
+    """网络或页面层面可预期的失败（转成友好提示，不打印栈）。"""
+
+
 def fetch(url, timeout=25):
+    """拉取文章 HTML。失败时抛 FetchError 而不是裸的 URLError。"""
     req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return r.read().decode("utf-8", "replace")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        raise FetchError("HTTP %s —— 链接可能已失效或被限制（%s）" % (e.code, url))
+    except urllib.error.URLError as e:
+        raise FetchError(
+            "网络请求失败：%s\n"
+            "  排查：能否访问 mp.weixin.qq.com？是否需要代理？" % getattr(e, "reason", e))
+    except (TimeoutError, OSError) as e:
+        raise FetchError("请求超时或中断：%s" % e)
 
 
 def _unescape(s):
@@ -88,12 +119,35 @@ def extract(html):
     return out
 
 
-def main():
-    if len(sys.argv) < 2:
-        print(__doc__)
-        return 1
-    url = sys.argv[1]
-    rec = extract(fetch(url))
+def build_parser():
+    ap = argparse.ArgumentParser(
+        prog="fetch_wechat_article.py",
+        description="微信公众号文章正文提取（免登录、免爬虫、纯 HTTP）。",
+        epilog="例：fetch_wechat_article.py 'https://mp.weixin.qq.com/s/xxxx' --json rec.json",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    ap.add_argument("url", help="mp.weixin.qq.com/s/... 文章地址")
+    ap.add_argument("--json", metavar="FILE", default=None,
+                    help="把结果另存为 JSON 到 FILE")
+    return ap
+
+
+def main(argv=None):
+    ap = build_parser()
+    args = ap.parse_args(argv)
+
+    url = args.url.strip()
+    if not url.lower().startswith(("http://", "https://")):
+        # 防止不是 URL 的输入掉进 urllib 抛 ValueError
+        ap.error("url 必须以 http:// 或 https:// 开头（收到：%s）" % url)
+    if "mp.weixin.qq.com" not in url:
+        print("!! 警告：这不是 mp.weixin.qq.com 的链接，很可能提取不到正文。")
+
+    try:
+        rec = extract(fetch(url))
+    except FetchError as e:
+        print("错误：%s" % e, file=sys.stderr)
+        return 2
     rec["url"] = url
 
     if rec.get("content"):
@@ -110,12 +164,10 @@ def main():
         print("!! 未能提取正文。blocked marker =", rec.get("blocked"))
         print("   可能原因：文章已删除 / 需要验证 / 链接不完整")
 
-    if "--json" in sys.argv:
-        i = sys.argv.index("--json")
-        if i + 1 < len(sys.argv):
-            with open(sys.argv[i + 1], "w", encoding="utf-8") as f:
-                json.dump(rec, f, ensure_ascii=False, indent=2)
-            print("\n[saved]", sys.argv[i + 1])
+    if args.json:
+        with open(args.json, "w", encoding="utf-8") as f:
+            json.dump(rec, f, ensure_ascii=False, indent=2)
+        print("\n[saved]", args.json)
     return 0
 
 

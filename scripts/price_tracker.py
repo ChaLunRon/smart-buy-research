@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
 """
-渠道比价记录工具 v3。
+渠道比价记录工具。
 
 用途：把检索到的各渠道价格统一归一化为"到手价"并输出比价表，避免手工
 整理价格数据时算错、漏掉叠加优惠、混淆会员价，或忽略长期使用成本。
 
-v3 相比 v2 新增：
+主要能力：
   - 国家补贴支持（subsidy_rate / subsidy_amount，区分"已含补贴"与"可叠加补贴"）
+  - 国补额度**按品类封顶**（数码每件 ≤500 元、电脑每件 ≤1500 元），
+    超封顶自动截断；单价越过品类门槛时给出"该品类通常不参与"的告警
   - 重复计算国补预警（商家标"补贴价"通常已含国补，不能再叠）
   - 四大平台渠道类型识别（京东/淘宝天猫/拼多多/官方商城）
   - 电商专供款标记（exclusive_model）
   - 券的时效标记（coupon_expiry）
-
-v2 相比 v1 新增：
   - 会员价区分（会员价与普通价分开呈现，避免拿会员价误导用户）
   - 历史价格标记（标记当前是否处于价格高位）
   - 单次使用成本计算（耗材类品类）
@@ -21,8 +21,8 @@ v2 相比 v1 新增：
 
 用法：
 
-   # 1. 添加一条价格记录（含国补）
-   python price_tracker.py add --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 --promo 100 --shipping 0 --subsidy-amount 975 --note "国补15%已含" --member-price 5690 --member-type "Plus"
+   # 1. 添加一条价格记录（含国补；金额须是能核对的真实值）
+   python price_tracker.py add --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 --promo 100 --shipping 0 --note "已核实国补资格" --member-price 5690 --member-type "Plus"
 
    # 2. 生成比价表（从 records.json 读取）
    python price_tracker.py report --input records.json
@@ -39,11 +39,11 @@ v2 相比 v1 新增：
     "coupon": 200,
     "promo": 100,
     "shipping": 0,
-    "subsidy_amount": 975,
+    "subsidy_rate": 0.15,
     "subsidy_included": true,
     "member_price": 5690,
     "member_type": "Plus",
-    "note": "国补15%已含",
+    "note": "已核实国补资格",
     "date": "2026-09-22",
     "coupon_expiry": "2026-09-30",
     "is_historic_low": false,
@@ -61,13 +61,17 @@ v2 相比 v1 新增：
   promo             : 其他立减/满减（元，填正数）
   shipping          : 运费（元）
   subsidy_amount    : 国补金额（元，填正数；不知道金额可填 0 并用 subsidy_rate）
+                      **必须是可以核对出来的真实金额**，不要用「标价 ×15%」硬算——
+                      政策有品类封顶（数码 ≤500/件、电脑 ≤1500/件），
+                      超出的部分会被自动截断，硬算出来的数字是错的
   subsidy_included  : 该价格是否已含国补（**关键字段**，默认 false）
-  subsidy_rate      : 国补比例（如 0.15；与 subsidy_amount 二选一）
-  member_price      : 会员到手价（元，可选；若不填则会员价不单独展示）
+                      看到商家写「补贴价」就应置 true，否则会重复扣减
+  subsidy_rate      : 国补比例（如 0.15；与 subsidy_amount **二选一**，同时填会报错）
+  member_price      : 会员到手价（元，可选；**按实付填写，不与 coupon/promo 叠加**）
   member_type       : 会员类型（如 88VIP / Plus，可选）
   note              : 备注（赠品、限时、成色等）
   date              : 记录日期
-  coupon_expiry     : 券的截止日期（可选）
+  coupon_expiry     : 券的截止日期（可选，须为 YYYY-MM-DD 或 YYYY/MM/DD）
   is_historic_low   : 是否处于历史低位（可选，bool）
   exclusive_model   : 是否电商专供款（可选，bool）
   consumable_cost   : 单次耗材成本（元，可选，用于耗材类品类）
@@ -80,6 +84,7 @@ v2 相比 v1 新增：
 
 import argparse
 import json
+import os
 import statistics
 import sys
 from datetime import date, datetime
@@ -93,15 +98,92 @@ def _f(v, default=0.0):
         return default
 
 
+# 2026 年国补品类参数（依据国家发展改革委、财政部 2026 年
+# "大规模设备更新和消费品以旧换新" 政策）：
+#   数码智能产品 = 手机 / 平板 / 智能手表（手环）/ 智能眼镜
+#     → 单件售价 ≤ 6000 元才参与；按最终售价 15%；每件 ≤ 500 元
+#   家电（含电脑）= 冰箱 / 洗衣机 / 电视 / 空调 / 电脑 / 热水器
+#     → 须 1 级能效或水效；按最终售价 15%；每件 ≤ 1500 元
+# 关键点：**"电脑"走家电通道，不走数码通道**。单价 6799 的笔记本
+# 既不在数码通道（超 6000），也不满足家电通道（须 1 级能效且通常
+# 有独立价格门槛），因此该价位报出国补本身就是可疑的。
+SUBSIDY_CATEGORY = {
+    # 关键词 -> (品类名, 单件售价上限 or None, 每件补贴上限, 通道)
+    "手机":   ("手机",     6000,  500, "数码"),
+    "平板":   ("平板",     6000,  500, "数码"),
+    "手表":   ("智能手表", 6000,  500, "数码"),
+    "手环":   ("智能手环", 6000,  500, "数码"),
+    "眼镜":   ("智能眼镜", 6000,  500, "数码"),
+    "笔记本": ("电脑",     None, 1500, "家电（须 1 级能效）"),
+    "电脑":   ("电脑",     None, 1500, "家电（须 1 级能效）"),
+    "台式":   ("电脑",     None, 1500, "家电（须 1 级能效）"),
+    "显示器": ("电脑",     None, 1500, "家电（须 1 级能效）"),
+    "冰箱":   ("冰箱",     None, 1500, "家电（须 1 级能效）"),
+    "洗衣机": ("洗衣机",   None, 1500, "家电（须 1 级能效）"),
+    "电视":   ("电视",     None, 1500, "家电（须 1 级能效）"),
+    "空调":   ("空调",     None, 1500, "家电（须 1 级能效）"),
+    "热水器": ("热水器",   None, 1500, "家电（须 1 级能效）"),
+}
+SUBSIDY_DEFAULT_CAP = 500.0
+
+# 明确**不在** 2026 年国补目录内的高频品类。
+# 这类商品如果被填了国补金额，几乎一定是算错了或被人误导了。
+SUBSIDY_EXCLUDED = (
+    "耳机", "键盘", "鼠标", "音箱", "音响", "充电", "数据线", "支架",
+    "保护壳", "贴膜", "路由", "扫地机", "净化器", "加湿器", "风扇",
+    "食品", "化妆品", "护肤", "保健品", "药", "服", "鞋", "包",
+    "玩具", "家具", "床", "椅", "灯", "书", "猫粮", "狗粮",
+)
+
+
+def subsidy_rule(item: str):
+    """按商品名推断适用哪个国补通道。
+
+    返回 (品类, 售价上限 or None, 补贴上限, 通道名)。
+    未识别时返回通道名 "未识别"，调用方据此提示"请自行核实品类"。
+
+    优先级：**排除表 > 品类表**。耳机、充电头这类小配件虽然属于"数码"
+    大类，但**不在** 2026 年国补目录内（目录只列了手机/平板/手表/眼镜
+    四类数码 + 六类家电），所以必须先判排除，否则"蓝牙耳机"会被误判
+    成有 500 元补贴。
+    """
+    it = item or ""
+    for kw in SUBSIDY_EXCLUDED:
+        if kw in it:
+            return ("未识别", None, SUBSIDY_DEFAULT_CAP, "未识别")
+    for kw, rule in SUBSIDY_CATEGORY.items():
+        if kw in it:
+            return rule
+    return ("未识别", None, SUBSIDY_DEFAULT_CAP, "未识别")
+
+
 def compute_subsidy(rec: dict) -> float:
-    """计算国补金额。支持直接给金额或用比例算。"""
+    """计算国补金额。支持直接给金额或用比例算。
+
+    口径说明：
+    - 国补按「商品成交价」计算，**不含运费**（运费不属于补贴范围）。
+      因此这里刻意不减 shipping —— 与 compute_final_price 中
+      "先加运费再减补贴" 的顺序配合，两者口径一致。
+    - 如果同时填了 subsidy_amount 和 subsidy_rate，**报错**而不是
+      静默取其一。两者并存几乎总是填错，静默取其一会让用户以为
+      另一个也生效了（实测 rate=0.15 + amount=1 时只剩 1 元）。
+    - 若比例算出的金额超过政策封顶，**按封顶截断**，而不是原样输出
+      一个高于政策的数字（这是「不编造优惠信息」红线的直接要求）。
+    """
     amt = _f(rec.get("subsidy_amount"))
-    if amt > 0:
-        return round(amt, 2)
     rate = _f(rec.get("subsidy_rate"))
+    if amt > 0 and rate > 0:
+        raise ValueError(
+            "subsidy_amount 与 subsidy_rate 只能填一个，"
+            "两者同时填写会无法判断以哪个为准（当前：金额 %.2f、比例 %s）"
+            % (amt, rate)
+        )
+    _, _, cap, _ = subsidy_rule(rec.get("item"))
+    if amt > 0:
+        return round(min(amt, cap), 2)
     if rate > 0:
         base = _f(rec.get("list_price")) - _f(rec.get("coupon")) - _f(rec.get("promo"))
-        return round(max(base, 0) * rate, 2)
+        return round(min(max(base, 0) * rate, cap), 2)
     return 0.0
 
 
@@ -135,18 +217,38 @@ def compute_unit_cost(rec: dict):
 
 
 def normalize_channel_type(channel: str) -> str:
-    """按渠道名推断售后主体类型。"""
+    """按渠道名推断售后主体类型。
+
+    判定纪律：**否定词优先于肯定词**。
+    "官网 XX 第三方店" 这种名字里同时含"官网"和"第三方"，
+    语义主体是"第三方店"（挂靠在官网上的第三方卖家或干脆是蹭名），
+    绝不能因为出现"官网"二字就判成品牌官方——那会让告警反着来。
+    因此先扫负面词（第三方/专营/专卖/个人/店），命中即判第三方，
+    再扫正面词（自营 / 官方旗舰 / 品牌官网）。
+    """
     c = channel or ""
+    if not c.strip():
+        return "第三方店铺"
+
+    # 第一优先级：明确的负面信号 -> 第三方
+    NEGATIVE = ("第三方", "专营", "专卖", "个人店", "小店", "代购", "全球购",
+                "海外", "水货", "官换", "翻新", "二手", "黄牛")
+    if any(w in c for w in NEGATIVE):
+        return "第三方店铺"
+
+    # 第二优先级：平台自营
     if "自营" in c:
         return "平台自营"
-    if "官网" in c or "官方商城" in c or "商城" in c:
+
+    # 第三优先级：品牌官方（官网/官方旗舰店，而非泛化的"商城"）
+    if "官方旗舰" in c or "官旗" in c or "旗舰店" in c:
         return "品牌官方"
-    if "官旗" in c or "官方旗舰" in c:
+    if "官网" in c or "官方商城" in c or "官方店" in c or "官方网站" in c:
         return "品牌官方"
+
     if "百亿补贴" in c:
         return "平台补贴"
-    if "专营" in c or "专卖" in c:
-        return "第三方授权"
+
     return "第三方店铺"
 
 
@@ -166,7 +268,6 @@ def normalize_platform(channel: str) -> str:
     if "唯品会" in c:
         return "唯品会"
     return "其他"
-
 
 def build_records(args) -> list:
     """从命令行参数构建单条记录。"""
@@ -195,16 +296,61 @@ def build_records(args) -> list:
 
 
 def load_records(input_path: str) -> list:
-    """从文件或 stdin 读取记录。"""
+    """从文件或 stdin 读取记录。出错时抛出 ValueError（由 main 转成友好提示）。"""
     if input_path:
-        with open(input_path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    data = sys.stdin.read().strip()
-    return json.loads(data) if data else []
+        if os.path.isdir(input_path):
+            raise ValueError("%s 是目录，不是文件" % input_path)
+        if not os.path.exists(input_path):
+            raise ValueError("找不到文件：%s" % input_path)
+        try:
+            with open(input_path, "r", encoding="utf-8") as f:
+                raw = f.read()
+        except OSError as e:
+            raise ValueError("读取 %s 失败：%s" % (input_path, e))
+    else:
+        raw = sys.stdin.read()
+
+    raw = raw.strip()
+    if not raw:
+        return []
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError("JSON 解析失败（第 %d 行第 %d 列）：%s"
+                         % (e.lineno, e.colno, e.msg))
+
+    # 允许 {} / null 等非数组输入，统一转成空列表
+    if data is None:
+        return []
+    if isinstance(data, dict):
+        if not data:
+            return []
+        raise ValueError("顶层应是数组 [ {...}, {...} ]，收到的是对象")
+    if not isinstance(data, list):
+        raise ValueError("顶层应是数组，收到的是 %s" % type(data).__name__)
+
+    # 逐条校验必需字段，报错时指明第几条
+    # 字段名必须与 build_records() 写出的保持一致（list_price 不是 list）
+    REQUIRED = ("item", "channel", "list_price")
+    for i, rec in enumerate(data, 1):
+        if not isinstance(rec, dict):
+            raise ValueError("第 %d 条不是对象，而是 %s"
+                             % (i, type(rec).__name__))
+        missing = [k for k in REQUIRED if k not in rec]
+        if missing:
+            raise ValueError("第 %d 条缺少必需字段：%s"
+                             % (i, "、".join(missing)))
+    return data
 
 
-def _coupon_expired(expiry: str) -> bool:
-    """判断券是否已过期。"""
+def _coupon_expired(expiry: str):
+    """判断券是否已过期。
+
+    返回 True（已过期）/ False（未过期）/ None（**日期格式无法识别**）。
+    不能把解析失败静默当成"未过期"——否则 9999-99-99 这种脏数据会被
+    原样输出成"券截至 9999-99-99，下单前复核"，用户以为券还有效。
+    """
     if not expiry:
         return False
     for fmt in ("%Y-%m-%d", "%Y/%m/%d"):
@@ -212,7 +358,7 @@ def _coupon_expired(expiry: str) -> bool:
             return datetime.strptime(expiry, fmt).date() < date.today()
         except ValueError:
             continue
-    return False
+    return None
 
 
 def render_report(records: list, show_member: bool = True) -> str:
@@ -304,7 +450,8 @@ def render_report(records: list, show_member: bool = True) -> str:
         spread = round(priciest["final_price"] - cheapest["final_price"], 2)
 
         lines.append(f"- **最低到手价**：¥{cheapest['final_price']:.0f}（{cheapest.get('channel')}，{cheapest['channel_type']}）")
-        lines.append(f"- **价差**：¥{spread:.0f}（相对最高价 {priciest.get('channel')}）")
+        if spread > 0:
+            lines.append(f"- **价差**：¥{spread:.0f}（相对最高价 {priciest.get('channel')}）")
 
         # 标价陷阱
         by_list = sorted(enriched, key=lambda r: _f(r.get("list_price")))
@@ -323,17 +470,58 @@ def render_report(records: list, show_member: bool = True) -> str:
                 f"（这是最常见的算错方式）。"
             )
 
+        # 国补政策合规检查 —— 这是「不编造优惠信息」红线的机械兜底。
+        # 实测教训：曾用「6799 笔记本 + 975 元国补」当过示例，而 975 是
+        # (6799-300)×15% 算出来的，远超数码类每件 500 元的法定封顶，
+        # 且 6799 本身已越过数码通道 6000 元的售价门槛。写进技能的值
+        # 必须能被政策核对，所以这里把两条硬约束做成显式告警。
+        for r in enriched:
+            cat, price_cap, cap, tunnel = subsidy_rule(r.get("item"))
+            sub = r["subsidy"]
+            if sub <= 0:
+                continue
+            base = _f(r.get("list_price"))
+            if cat == "未识别":
+                lines.append(
+                    f"- ❓ **国补品类未识别**：`{r.get('item')}` 不在技能内置的"
+                    f"国补品类表里。请自行核实它是否在目录内，再决定要不要写国补金额。"
+                )
+            elif price_cap is not None and base > price_cap:
+                lines.append(
+                    f"- 🚫 **国补品类存疑**：{cat}类国补要求**单件售价 ≤ {price_cap} 元**，"
+                    f"而 {r.get('item')} 标价 ¥{base:.0f} 已超出，通常**不参与**该通道补贴。"
+                    f"请核实这条补贴是否真实可拿。"
+                )
+            elif sub >= cap:
+                lines.append(
+                    f"- 🏛️ **国补已按封顶截断**：{cat}类（{tunnel}）每件上限 ¥{cap:.0f}，"
+                    f"按比例算出的金额更高，已截断到上限。不要用「标价 ×15%」反推能减多少。"
+                )
+            elif tunnel.startswith("家电"):
+                lines.append(
+                    f"- 🏛️ **电脑/家电走「1 级能效家电」通道**（每件 ≤{cap:.0f} 元），"
+                    f"不是数码通道。需确认该型号有 1 级能效标识，否则拿不到补贴。"
+                )
+
         # 会员价差异提示
-        member_recs = [r for r in enriched if r["member_final"] is not None]
+        # 只有在「会员价确实比该渠道自己的普通价更低」时才提，避免把
+        # 「会员价 vs 自己的标价」当成渠道间对比 —— 那没有决策价值。
+        # 口径提醒：member_price 按**实付**填写，不与 coupon/promo 叠加，
+        # 所以这个价差和"券能省多少"不能相加，措辞里要说清楚。
+        member_recs = [r for r in enriched
+                       if r["member_final"] is not None
+                       and r["member_final"] < r["final_price"]]
         if member_recs:
             best_member = min(member_recs, key=lambda r: r["member_final"])
-            gap = round(cheapest["final_price"] - best_member["member_final"], 2)
-            if gap > 0:
-                lines.append(
-                    f"- 💳 **会员价更低**：{best_member.get('channel')} 会员价 ¥{best_member['member_final']:.0f}"
-                    f"（{best_member.get('member_type') or '会员'}），比普通最低价便宜 ¥{gap:.0f}。"
-                    f"注意区分「你能拿到的价」和「会员能拿到的价」。"
-                )
+            gap = round(best_member["final_price"] - best_member["member_final"], 2)
+            hint = ""
+            if _f(best_member.get("coupon")) > 0 or _f(best_member.get("promo")) > 0:
+                hint = "（会员价按实付填写，已含渠道优惠，勿与券/立减再加一次）"
+            lines.append(
+                f"- 💳 **会员价更低**：{best_member.get('channel')} 会员价 ¥{best_member['member_final']:.0f}"
+                f"（{best_member.get('member_type') or '会员'}），比该渠道普通价便宜 ¥{gap:.0f}{hint}。"
+                f"注意区分「你能拿到的价」和「会员能拿到的价」。"
+            )
 
         # 售后主体提示
         if cheapest["channel_type"] == "第三方店铺":
@@ -358,7 +546,13 @@ def render_report(records: list, show_member: bool = True) -> str:
         # 券时效提示
         expiring = [r for r in enriched if r.get("coupon_expiry")]
         for r in expiring:
-            if _coupon_expired(r["coupon_expiry"]):
+            expired = _coupon_expired(r["coupon_expiry"])
+            if expired is None:
+                lines.append(
+                    f"- ⚠️ **券期无法识别**：{r.get('channel')} 的券日期 `{r['coupon_expiry']}` "
+                    f"不是 `YYYY-MM-DD` 或 `YYYY/MM/DD` 格式，未能判断是否过期，请人工复核。"
+                )
+            elif expired:
                 lines.append(
                     f"- ⏰ **券已过期**：{r.get('channel')} 的券截止 {r['coupon_expiry']}，需重新核价。"
                 )
@@ -407,14 +601,21 @@ def render_report(records: list, show_member: bool = True) -> str:
     lines.append("---")
     lines.append("")
     lines.append("提示：以上为检索时点价格，实际价格波动频繁，下单前请复核。")
-    lines.append("国补注意：2026 年数码国补约 15%，有价格上限与品类、渠道限制；")
+    lines.append("国补注意：2026 年分数码（手机/平板/手表/眼镜，≤6000 元、每件≤500 元）")
+    lines.append("与家电（含电脑，须 1 级能效、每件≤1500 元）两条通道，均按 15% 计，")
+    lines.append("超 6000 元整单失去资格，封顶按件算——不要用「标价 ×15%」反推。")
     lines.append("商家标注的「补贴价」通常已含国补，不要重复计算。")
     return "\n".join(lines)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="渠道比价记录工具 v3")
-    sub = parser.add_subparsers(dest="command")
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="price_tracker.py",
+        description="渠道到手价比对：自动识别标价陷阱、会员价差异、可疑低价、单次使用成本、国补后价。",
+        epilog="例：price_tracker.py report --input records.json",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub = parser.add_subparsers(dest="command", metavar="{add,report}")
 
     add_p = sub.add_parser("add", help="添加一条价格记录")
     add_p.add_argument("--item", required=True)
@@ -446,28 +647,66 @@ def main():
 
     args = parser.parse_args()
 
+    # argparse 在「自定义 Action 抛 ArgumentError」等情况下会把异常继续
+    # 向上冒泡，用户会看到英文 traceback。这里统一兜住，转成中文提示 +
+    # 退出码 2（与参数错误一致），兑现文档里"不抛栈"的承诺。
+    try:
+        if args.command == "add":
+            records = build_records(args)
+        elif args.command == "report":
+            records = load_records(args.input)
+    except ValueError as e:
+        print("错误：%s" % e, file=sys.stderr)
+        return 2
+
     if args.command == "add":
-        records = build_records(args)
         if args.out:
+            if os.path.isdir(args.out):
+                print("错误：--out 指向的是目录，请给出文件名（如 %s）"
+                      % os.path.join(args.out, "records.json"), file=sys.stderr)
+                return 2
             existing = []
             try:
                 with open(args.out, "r", encoding="utf-8") as f:
                     existing = json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
+            except FileNotFoundError:
                 existing = []
+            except json.JSONDecodeError:
+                print("错误：%s 已存在但不是合法 JSON，为免覆盖已中止。"
+                      "请先备份或删除该文件。" % args.out, file=sys.stderr)
+                return 2
+            except OSError as e:
+                print("错误：读取 %s 失败：%s" % (args.out, e), file=sys.stderr)
+                return 2
+            if not isinstance(existing, list):
+                print("错误：%s 的内容不是数组，为免写坏已中止。" % args.out,
+                      file=sys.stderr)
+                return 2
             existing.extend(records)
-            with open(args.out, "w", encoding="utf-8") as f:
-                json.dump(existing, f, ensure_ascii=False, indent=2)
+            try:
+                with open(args.out, "w", encoding="utf-8") as f:
+                    json.dump(existing, f, ensure_ascii=False, indent=2)
+            except OSError as e:
+                print("错误：写入 %s 失败：%s" % (args.out, e), file=sys.stderr)
+                return 2
             print(f"已写入 {args.out}（现有 {len(existing)} 条记录）")
         else:
             print(json.dumps(records, ensure_ascii=False, indent=2))
 
     elif args.command == "report":
-        print(render_report(load_records(args.input), show_member=not args.no_member))
+        try:
+            print(render_report(records, show_member=not args.no_member))
+        except ValueError as e:
+            # compute_subsidy 在渲染期才被调用（amount/rate 冲突检测），
+            # 必须在这里也兜一层，否则会漏出英文 traceback。
+            print("错误：%s" % e, file=sys.stderr)
+            return 2
 
     else:
         parser.print_help()
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

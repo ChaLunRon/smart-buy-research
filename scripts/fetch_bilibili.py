@@ -11,6 +11,7 @@ B站数据获取（免登录）—— 视频信息 / 评论 / 搜索。
     python fetch_bilibili.py comments BV1GJ411x7h7 [--pages 2]
     python fetch_bilibili.py search "笔记本 推荐"      # 走浏览器搜索页，更可靠
 """
+import argparse
 import sys
 import re
 import json
@@ -19,6 +20,12 @@ import random
 import hashlib
 import urllib.request
 import urllib.parse
+import urllib.error
+
+
+class FetchError(Exception):
+    """网络或接口层面可预期的失败（转成友好提示，不打印栈）。"""
+
 
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
@@ -36,6 +43,7 @@ MIXIN_KEY_ENC_TAB = [
 
 
 def _get(url, referer="https://www.bilibili.com/"):
+    """GET 一个 JSON 接口。网络/解析失败时抛 FetchError（由 main 转成友好提示）。"""
     req = urllib.request.Request(url, headers={
         "User-Agent": UA,
         "Referer": referer,
@@ -44,16 +52,46 @@ def _get(url, referer="https://www.bilibili.com/"):
     })
     # 25s：B站接口在跨境/弱网下偶有长尾延迟，过短会误判为「读不到」，
     # 过长则会在风控静默丢包时卡死。25s 是实测的折中值。
-    with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as r:
-        return json.loads(r.read().decode("utf-8", "replace"))
+    try:
+        with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as r:
+            body = r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        if e.code == 412:
+            # 注意：这是 **HTTP 状态码 412**（内容风控层拒绝，返回非 JSON），
+            # 与接口体内的业务错误码 code=-412 不是一回事。
+            # WBI 签名**解决不了** HTTP 412——签名只对评论接口有效，
+            # 搜索接口的 412 属于风控，需要带 Cookie。别照"补签名"这条错路排查。
+            raise FetchError(
+                "接口返回 HTTP 412（内容风控拒绝，非签名问题）：%s\n"
+                "  这是平台风控层拦截，WBI 签名无效。\n"
+                "  可行路径：改用浏览器读取页面文本（见 search 子命令的输出）。" % url)
+        raise FetchError("接口返回 HTTP %s（%s）" % (e.code, url))
+    except urllib.error.URLError as e:
+        raise FetchError("网络请求失败（%s）：%s\n"
+                         "  排查：能否访问 bilibili.com？是否需要代理？"
+                         % (url, getattr(e, "reason", e)))
+    except (TimeoutError, OSError) as e:
+        raise FetchError("请求超时或中断（%s）：%s" % (url, e))
+
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        raise FetchError("接口返回的不是 JSON（%s），可能被风控拦截。"
+                         "前 120 字符：%s" % (url, body[:120].replace("\n", " ")))
 
 
 def get_wbi_keys():
     """未登录也会返回 img_key / sub_key（code=-101 是正常的）。"""
     d = _get("https://api.bilibili.com/x/web-interface/nav")
     wbi = (d.get("data") or {}).get("wbi_img") or {}
-    img_key = wbi["img_url"].rsplit("/", 1)[1].split(".")[0]
-    sub_key = wbi["sub_url"].rsplit("/", 1)[1].split(".")[0]
+    try:
+        img_key = wbi["img_url"].rsplit("/", 1)[1].split(".")[0]
+        sub_key = wbi["sub_url"].rsplit("/", 1)[1].split(".")[0]
+    except (KeyError, IndexError):
+        raise FetchError(
+            "拿不到 WBI 密钥（nav 接口未返回 wbi_img）。\n"
+            "  通常是被风控或接口改版；评论功能会不可用。\n"
+            "  返回内容：%s" % str(d)[:150])
     return img_key, sub_key
 
 
@@ -79,7 +117,9 @@ def cmd_info(bvid):
     if d.get("code") != 0:
         print("!! 接口返回 code=%s msg=%s" % (d.get("code"), d.get("message")))
         return
-    dd = d["data"]
+    dd = d.get("data")
+    if not isinstance(dd, dict):
+        raise FetchError("接口返回 code=0 但没有 data 字段，可能被风控或接口改版")
     st = dd.get("stat") or {}
     print("标题:", dd.get("title"))
     print("UP主:", (dd.get("owner") or {}).get("name"))
@@ -91,17 +131,20 @@ def cmd_info(bvid):
     print("aid=%s bvid=%s" % (dd.get("aid"), dd.get("bvid")))
 
 
-def cmd_comments(bvid, pages=1):
+def cmd_comments(bvid, pages=1, mode=3):
     d = _get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid)
     if d.get("code") != 0:
         print("!! 拿不到 aid:", d.get("message"))
         return
-    aid = d["data"]["aid"]
+    aid = (d.get("data") or {}).get("aid")
+    if not aid:
+        raise FetchError("拿不到视频 aid，无法查询评论：接口返回 %s"
+                         % str(d)[:120])
 
     img_key, sub_key = get_wbi_keys()
     offset = ""
     for page in range(pages):
-        p = sign({"oid": aid, "type": 1, "mode": 3, "plat": 1,
+        p = sign({"oid": aid, "type": 1, "mode": mode, "plat": 1,
                   "pagination_str": json.dumps({"offset": offset}, separators=(",", ":")),
                   "web_location": "1315875"},
                  img_key, sub_key)
@@ -143,24 +186,69 @@ def cmd_search(keyword):
     print("agent-browser get text body")
 
 
-def main():
-    if len(sys.argv) < 3:
-        print(__doc__)
+class _PagesAction(argparse.Action):
+    """校验 --pages 并给出中文报错（用 type=int 的话报错信息是英文的）。"""
+
+    def __call__(self, parser, ns, values, option_string=None):
+        try:
+            n = int(values)
+        except (TypeError, ValueError):
+            raise argparse.ArgumentError(self, "必须是整数（收到 %r）" % (values,))
+        if n < 1:
+            raise argparse.ArgumentError(self, "必须是正整数（收到 %s）" % n)
+        if n > 20:
+            raise argparse.ArgumentError(
+                self, "最多 20 页（收到 %s），避免触发风控" % n)
+        setattr(ns, self.dest, n)
+
+
+def build_parser():
+    ap = argparse.ArgumentParser(
+        prog="fetch_bilibili.py",
+        description="B站数据获取（免登录）：视频信息 / 评论 / 搜索。",
+        epilog="例：fetch_bilibili.py comments BV1GJ411x7h7 --pages 2",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    sub = ap.add_subparsers(dest="cmd", metavar="{info,comments,search}")
+
+    p_info = sub.add_parser("info", help="取视频信息（标题/UP主/播放/点赞等）")
+    p_info.add_argument("bvid", help="视频 BV 号，如 BV1GJ411x7h7")
+
+    p_cmt = sub.add_parser("comments", help="取评论（走 WBI 签名）")
+    p_cmt.add_argument("bvid", help="视频 BV 号")
+    p_cmt.add_argument("--pages", action=_PagesAction, default=1,
+                       help="抓取页数，默认 1，上限 20")
+    p_cmt.add_argument("--mode", type=int, default=3, choices=(2, 3),
+                       help="排序：2=按时间（找刷单/集中好评用这个），3=按热度（默认）")
+
+    p_s = sub.add_parser("search", help="输出搜索页地址与浏览器命令")
+    p_s.add_argument("keyword", help="搜索关键词")
+
+    return ap
+
+
+def main(argv=None):
+    ap = build_parser()
+    # argparse 在自定义 Action 抛 ArgumentError 时会把异常继续向上冒泡，
+    # 用户会看到英文 traceback。统一兜住转中文 + 退出码 2。
+    try:
+        args = ap.parse_args(argv)
+    except argparse.ArgumentError as e:
+        print("错误：%s" % e, file=sys.stderr)
+        return 2
+    if not args.cmd:
+        ap.print_help()
         return 1
-    cmd = sys.argv[1]
-    arg = sys.argv[2]
-    if cmd == "info":
-        cmd_info(arg)
-    elif cmd == "comments":
-        pages = 1
-        if "--pages" in sys.argv:
-            pages = int(sys.argv[sys.argv.index("--pages") + 1])
-        cmd_comments(arg, pages)
-    elif cmd == "search":
-        cmd_search(arg)
-    else:
-        print(__doc__)
-        return 1
+    try:
+        if args.cmd == "info":
+            cmd_info(args.bvid)
+        elif args.cmd == "comments":
+            cmd_comments(args.bvid, args.pages, args.mode)
+        elif args.cmd == "search":
+            cmd_search(args.keyword)
+    except FetchError as e:
+        print("错误：%s" % e, file=sys.stderr)
+        return 2
     return 0
 
 

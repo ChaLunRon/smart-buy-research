@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 安全问题（请勿开公开 Issue）
+    url: https://github.com/ChaLunRon/smart-buy-research/security/advisories/new
+    about: 脚本漏洞、提示注入绕过手法、敏感数据风险，请走私密报告。详见 SECURITY.md
+  - name: 使用问题 / 讨论
+    url: https://github.com/ChaLunRon/smart-buy-research/discussions
+    about: 装不上、用不明白、想聊聊方法论，来这里

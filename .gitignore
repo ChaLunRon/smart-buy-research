@@ -11,13 +11,16 @@ records.json
 prices.json
 *.price.json
 
-# 生成的调研报告（含个人需求信息，不入库）
+# 生成的调研报告（含个人需求信息）
+# 注意：报告默认输出到"当前工作目录"，通常不是本仓库；
+# 这几条只在恰好从仓库目录内运行技能时才生效，作为防误提交的保险。
 商品调研-*.md
 商品调研-*.html
 
 # 打包产物
 dist/
 *.zip
+*.skill
 
 # 编辑器 / 系统
 .vscode/
@@ -25,7 +28,16 @@ dist/
 .DS_Store
 Thumbs.db
 desktop.ini
+*.swp
+*~
 
 # 临时调试文件
 _*.py
 _*.txt
+
+# Skill 评测 / 基准工作区（若启用 evals）
+*-workspace/
+skill-snapshot/
+timing.json
+grading.json
+feedback.json

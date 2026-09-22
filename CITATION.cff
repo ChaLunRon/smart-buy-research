@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "如果引用本 Skill，请使用以下元数据。"
+title: "Smart Buy Research · 全网口碑调研与购买决策"
+abstract: >-
+  一个用于 AI Agent 的购物决策 Skill：把「买什么」从「看商家详情页」降级为
+  「看真实用户在说什么、厂商资质是否经得起查」。内置垃圾信息源黑名单、
+  专业垂直社区定位、水军与恰饭识别、官方资质核验、四平台比价与国补计算，
+  默认输出 400 字以内的极简结论。
+type: software
+authors:
+  - name: "ChaLunRon"
+repository-code: "https://github.com/ChaLunRon/smart-buy-research"
+url: "https://github.com/ChaLunRon/smart-buy-research"
+license: MIT
+keywords:
+  - agent-skills
+  - smart-buy
+  - product-research
+  - purchase-decision
+  - review-analysis
+  - china-ecommerce
+  - subsidy
+version: "5.0"
+date-released: "2026-09-23"
