@@ -1,15 +1,20 @@
 # Smart Buy Research · 全网口碑调研与购买决策
 
 <p>
-  <img alt="version" src="https://img.shields.io/badge/version-5.0-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-5.1-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-yellow">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen">
+  <img alt="agent skills" src="https://img.shields.io/badge/Agent%20Skills-compatible-purple">
 </p>
 
 一个给 AI Agent 用的 **Skill**：把「买什么」从「看商家详情页」降级为「看真实用户在说什么、厂商资质是否经得起查」。
 
 > **核心立场**：商家的详情页是营销材料，用户的抱怨才是产品说明书。
+
+**为什么值得一看**：这个仓库解决的问题不是「搜不到」，而是「搜到的全是洗稿」。
+它用一套可执行的纪律（黑名单、垂直社区定位、交叉验证、资质核验、反水军特征库）
+把购物推荐从「看起来很专业」拉回「依据经得起查」。
 
 ---
 
@@ -17,15 +22,17 @@
 
 - [它解决什么问题](#它解决什么问题)
 - [它有什么不一样](#它有什么不一样)
+- [快速开始](#快速开始)
 - [安装](#安装)
 - [使用](#使用)
-- [目录结构](#目录结构)
+- [项目结构](#项目结构)
 - [脚本用法](#脚本用法)
 - [平台可读性实测](#平台可读性实测)
 - [版本命名规则](#版本命名规则)
 - [依赖](#依赖)
 - [已知限制](#已知限制)
 - [贡献与安全](#贡献与安全)
+- [致谢](#致谢)
 - [License](#license)
 
 ---
@@ -54,29 +61,49 @@
 
 ---
 
+## 快速开始
+
+**最快路径**：把本技能目录放进运行时的技能搜索路径，然后用自然语言提问。
+
+```bash
+git clone https://github.com/ChaLunRon/smart-buy-research.git \
+  ~/.workbuddy/skills/smart-buy-research-5-1
+```
+
+装好后直接说人话：
+
+```
+预算 6000，大一计算机专业，买笔记本，值不值？
+```
+
+Agent 会自动加载本技能。要详细版就在追问里说「详细说说」「给我一份报告」。
+各运行时的详细安装与排错见 [docs/getting-started.md](./docs/getting-started.md)。
+
 ## 安装
 
 这是一个标准的 Agent Skill（`SKILL.md` + `references/` + `scripts/`），遵循
 [Agent Skills 规范](https://agentskills.io/specification)。
 
-> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-0`），
+> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-1`），
 > 这是规范要求，否则校验不通过。注意 `name` 里**不能出现点号**，
-> 所以版本 `5.0` 写作 `5-0`。
+> 所以版本 `5.1` 写作 `5-1`。
 
 ```bash
 # 用户级安装（对所有项目生效，macOS / Linux）
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-0
+  ~/.workbuddy/skills/smart-buy-research-5-1
 ```
 
 Windows：
 
 ```powershell
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-0"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-1"
 ```
 
-装好后 Agent 会在遇到购物决策类问题时自动加载。也可手动指定 `/smart-buy-research-5-0`。
+也可手动指定 `/smart-buy-research-5-1` 调用。**Claude Code 及其他 Agent 的安装方式**
+（marketplace / Cursor / Windsurf / Codex / Copilot）见
+[docs/getting-started.md](./docs/getting-started.md)。
 
 ## 使用
 
@@ -110,10 +137,25 @@ XX 和 YY 哪个好？
 
 ---
 
-## 目录结构
+## 项目结构
+
+本仓库的目录划分遵循 Agent Skills 的**三层披露**原则：
+只把每次都用得到的放进 `SKILL.md`，其余按需加载。
+设计理由与改动决策树见 [docs/skill-anatomy.md](./docs/skill-anatomy.md)。
+
+| 层 / 目录 | 路径 | 作用 |
+|---|---|---|
+| 主入口 | `SKILL.md` | 工作流主干、不可协商原则、能力边界（**< 500 行**） |
+| 方法论 | `references/`（8 个文件） | 按需加载的详细方法，不进默认上下文 |
+| 可执行 | `scripts/`（3 个脚本） | 确定性计算与网络抓取，纯标准库 |
+| 示例 | `examples/usage.md` | 5 个场景的完整输入 → 输出 |
+| 文档 | `docs/` | 面向贡献者的安装、排错、结构说明 |
+| 治理 | `.github/` | Issue / PR 模板 |
+| 元数据 | `README.md` `CONTRIBUTING.md` `SECURITY.md` `CHANGELOG.md` `CITATION.cff` `LICENSE` `AGENTS.md` `CODE_OF_CONDUCT.md` `THIRD_PARTY_NOTICES.md` | 开源仓库标准治理文件 |
+| 环境 | `.editorconfig` `.gitattributes` `.gitignore` | 统一行尾 LF / UTF-8，防止跨平台 diff 噪音 |
 
 ```
-smart-buy-research-5-0/
+smart-buy-research-5-1/
 ├── SKILL.md                        # 技能主体（Agent 加载入口，约 400 行）
 ├── references/                     # 按需加载的方法论（不进上下文）
 │   ├── methodology.md              # Step 1–5 完整工作流
@@ -130,17 +172,23 @@ smart-buy-research-5-0/
 │   └── fetch_bilibili.py           # B站数据获取（含 WBI 签名实现）
 ├── examples/
 │   └── usage.md                    # 5 个场景示例（含「过程中发生了什么」）
+├── docs/
+│   ├── getting-started.md          # 各运行时安装与排错
+│   └── skill-anatomy.md            # 技能结构与规范（改内容前必读）
 ├── .github/
 │   ├── ISSUE_TEMPLATE/             # Bug / 内容纠错 / 平台可读性 / 功能建议 四类模板
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── README.md                       # 本文件
 ├── CONTRIBUTING.md                 # 贡献指南（含版本命名规则）
 ├── SECURITY.md                     # 安全政策（含提示注入风险说明）
-├── CHANGELOG.md                    # v1 → v5.0 版本演进
+├── CODE_OF_CONDUCT.md              # 贡献者公约（含本项目特有红线）
+├── AGENTS.md                       # 给 AI 编码代理的仓库说明
+├── CHANGELOG.md                    # v1 → 5.1 版本演进
 ├── CITATION.cff                    # 引用元数据
 ├── THIRD_PARTY_NOTICES.md          # 第三方声明（本项目无第三方代码依赖）
 ├── LICENSE                         # MIT
 ├── .editorconfig                   # 统一行尾 LF / UTF-8
+├── .gitattributes                  # 行尾规范化 + 二进制标记
 └── .gitignore
 ```
 
@@ -150,13 +198,13 @@ smart-buy-research-5-0/
 
 | 变更性质 | 版本动作 | 示例 |
 |---|---|---|
-| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.0` → `5.1` |
-| 新增能力、改变输出结构或判断纪律 | 大版本 +1 | `5.1` → `6.0` |
+| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.1` → `5.2` |
+| 新增能力、改变输出结构或判断纪律 | 大版本 +1 | `5.2` → `9.0` |
 
 | 场合 | 写法 | 原因 |
 |---|---|---|
-| 文档正文、`metadata.version` | `5.0` | 标准版本写法，可读 |
-| `name` 字段、目录名 | `smart-buy-research-5-0` | 规范只允许小写字母/数字/连字符，**点号非法** |
+| 文档正文、`metadata.version` | `5.1` | 标准版本写法，可读 |
+| `name` 字段、目录名 | `smart-buy-research-5-1` | 规范只允许小写字母/数字/连字符，**点号非法** |
 
 ## 脚本用法
 
@@ -238,6 +286,7 @@ python scripts/price_tracker.py report < bad.json
 - **不提供医疗建议。** 健康相关只做消费层面判断（成分、资质、性价比）。
 - **平台可读性会被平台方单方面改变。** 表里的结论是实测时点的情况，失效时以「换源优先」为准。
 - **垂直社区样本量小。** 结论中会标注「垂直社区观点，样本有限」。
+- **国补政策具有时效性。** 品类目录、门槛与封顶金额随政策调整，以官方最新公告为准。
 
 ## 贡献与安全
 
@@ -245,6 +294,8 @@ python scripts/price_tracker.py report < bad.json
   事实纠错、脚本加固）、PR 流程、版本命名规则、内容红线
 - **安全政策**：[SECURITY.md](./SECURITY.md) —— 脚本的网络行为、平台账号风险、
   **提示注入（prompt injection）缓解措施**、私密报告渠道
+- **贡献者公约**：[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- **给 AI 代理的说明**：[AGENTS.md](./AGENTS.md)
 - **第三方声明**：[THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md) —— 本项目**无第三方代码依赖**，
   仅列出文档中提及的第三方服务与政策信息来源
 
@@ -253,6 +304,19 @@ python scripts/price_tracker.py report < bad.json
 [平台可读性](.github/ISSUE_TEMPLATE/platform_readability.md) /
 [功能建议](.github/ISSUE_TEMPLATE/feature_request.md)）。
 **安全问题请勿开公开 Issue。**
+
+## 致谢
+
+本项目的设计吸收了以下开源项目的公开做法：
+
+- [anthropics/skills](https://github.com/anthropics/skills) —— Agent Skills 官方规范与示例，
+  本仓库的三层披露结构与 frontmatter 约束以其为准
+- [obra/superpowers](https://github.com/obra/superpowers) —— 技能即方法论的思路，
+  以及跨 Agent 兼容的组织方式
+- [addyosmani/agent-skills](https://github.com/addyosmani/agent-skills) —— 仓库级治理文件的完整度
+  （`AGENTS.md`、`.gitattributes`、`docs/`、层级化的项目结构说明）
+
+**本仓库不包含上述项目的任何代码**，仅在设计与文件组织上参考了公开可见的做法。
 
 ## 引用
 

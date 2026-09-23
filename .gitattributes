@@ -1,0 +1,39 @@
+# 行尾与文本属性规范化
+# 防止 Windows / macOS / Linux 贡献者提交时把整个文件的行尾改掉，
+# 造成 diff 里出现"整文件重写"的假象。
+#
+# 参考：https://git-scm.com/docs/gitattributes
+
+# 默认：交给 Git 自动判断文本文件，检出时用系统默认行尾
+* text=auto
+
+# 明确声明为文本、仓库内统一存为 LF
+*.md      text eol=lf
+*.py      text eol=lf
+*.txt     text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.cff     text eol=lf
+*.toml    text eol=lf
+*.sh      text eol=lf
+LICENSE   text eol=lf
+Makefile  text eol=lf
+
+# 明确声明为二进制，禁止任何转换
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.zip     binary
+
+# GitHub 语言统计：把本仓库识别为文档/技能项目而非纯 Python
+*.md      linguist-documentation
+references/*.md linguist-documentation
+docs/*.md linguist-documentation
+
+# 让 diff 在这些文件里按章节而不是整行显示
+CHANGELOG.md  diff=markdown
+SKILL.md      diff=markdown

@@ -20,7 +20,6 @@ prices.json
 # 打包产物
 dist/
 *.zip
-*.skill
 
 # 编辑器 / 系统
 .vscode/
@@ -28,16 +27,7 @@ dist/
 .DS_Store
 Thumbs.db
 desktop.ini
-*.swp
-*~
 
 # 临时调试文件
 _*.py
 _*.txt
-
-# Skill 评测 / 基准工作区（若启用 evals）
-*-workspace/
-skill-snapshot/
-timing.json
-grading.json
-feedback.json
