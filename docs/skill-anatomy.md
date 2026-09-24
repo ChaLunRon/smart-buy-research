@@ -48,7 +48,7 @@ Agent Skills 的核心设计是**分层加载**：不会一次性把所有内容
 
 ```yaml
 ---
-name: smart-buy-research-5-1
+name: smart-buy-research-5-2
 description: ...
 ---
 ```
@@ -62,7 +62,7 @@ description: ...
 | `metadata` | `author` / `version` / `homepage` |
 
 **约束**：`name` 只允许小写字母、数字、连字符，**点号非法**，
-且**必须与目录名完全一致**。所以版本 `5.1` 写作 `5-1`。
+且**必须与目录名完全一致**。所以版本 `5.2` 写作 `5-2`。
 
 ## 加新内容的决策树
 

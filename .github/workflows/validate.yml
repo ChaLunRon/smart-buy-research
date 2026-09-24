@@ -1,0 +1,46 @@
+name: validate
+
+# 本工作流只做机器能判定的检查：结构规范、脚本可编译、单元测试。
+# 内容层面的纪律（不编造优惠信息、资质必须可溯源等）无法自动化，见 CONTRIBUTING.md。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: 规范自检 + 单元测试 (py${{ matrix.python-version }})
+    # 固定 ubuntu-22.04 而不是 ubuntu-latest：后者已升到 24.04，
+    # setup-python 在上面拿不到 3.9 的构建产物，会让矩阵随机挂掉。
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: 显示环境
+        run: python -VV
+
+      - name: 技能结构规范自检
+        run: python tools/validate_skill.py . --quiet
+
+      - name: 脚本语法检查
+        run: python -m compileall -q scripts tools
+
+      - name: 单元测试
+        run: python -m unittest discover -s tests -v

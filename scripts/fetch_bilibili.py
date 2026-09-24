@@ -96,7 +96,20 @@ def get_wbi_keys():
 
 
 def mixin_key(img_key, sub_key):
-    orig = img_key + sub_key
+    """按前端固定混淆表重排 img_key + sub_key，取前 32 位。
+
+    B站的 img_key / sub_key 都是 32 位十六进制（拼起来 64 位，正好对上
+    0..63 的混淆表下标）。这里显式校验长度：万一接口改版返回了短密钥，
+    原实现会抛出一句英文的 `IndexError: string index out of range`，
+    与本技能「失败要有中文提示」的承诺不符，定位也很费劲。
+    """
+    orig = (img_key or "") + (sub_key or "")
+    if len(orig) < max(MIXIN_KEY_ENC_TAB) + 1:
+        raise FetchError(
+            "WBI 密钥长度异常：img_key=%d 位、sub_key=%d 位（应为各 32 位）。\n"
+            "  通常是 nav 接口返回内容被风控替换了。\n"
+            "  处理：稍后重试；仍失败则改走浏览器读取页面文本。"
+            % (len(img_key or ""), len(sub_key or "")))
     return "".join(orig[i] for i in MIXIN_KEY_ENC_TAB)[:32]
 
 

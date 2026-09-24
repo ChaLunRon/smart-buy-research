@@ -4,10 +4,10 @@
 
 ## 通用前提
 
-技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-1`）。
+技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-2`）。
 这是 Agent Skills 规范的硬要求，改错会导致校验不通过或加载失败。
 
-注意 `name` 里**不能出现点号**，所以版本 `5.1` 写作 `5-1`。
+注意 `name` 里**不能出现点号**，所以版本 `5.2` 写作 `5-2`。
 
 ## 按运行时安装
 
@@ -18,16 +18,16 @@
 ```bash
 # macOS / Linux
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-1
+  ~/.workbuddy/skills/smart-buy-research-5-2
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-1"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-2"
 ```
 
-**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-1`。
+**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-2`。
 
 ### Claude Code
 

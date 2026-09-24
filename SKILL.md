@@ -1,10 +1,22 @@
 ---
-name: smart-buy-research-5-1
+name: smart-buy-research-5-2
 description: 全网商品口碑调研与购买决策技能。当用户询问某类商品或型号"值不值得买""哪款好""求推荐""帮我挑一个""避雷"，或需对比多个品牌型号、核实厂商资质与宣传真伪、判断测评是否恰饭、查价格渠道与优惠券国补、诊断已购商品口碑时使用。核心纪律：优先专业垂直社区（每遇新品类先问"有没有专业社区"）与投诉平台（黑猫投诉/12315 并列第一），禁用门户聚合内容农场（今日头条/百家号/评测聚合站）作依据。平台可读性已实测：B站与 NGA 用无头浏览器完全可读、微信公众号直连可读正文、B站评论走 WBI 签名 API。输出默认极简（约 400 字，结论+理由+价格+一个坑）。不适用于无购买意图的纯知识问答、纯参数查询，以及股票/基金等金融产品研究。
+license: MIT
+compatibility: 需要能读取网页的 Agent 运行时（WorkBuddy / Claude Code / Cursor / Codex 等）；scripts/ 与 tools/ 仅需 Python 3.8+ 标准库，无第三方依赖；强烈建议装无头浏览器（agent-browser），否则 NGA 与 B站搜索页不可读。
+metadata:
+  author: ChaLunRon
+  version: "5.2"
+  homepage: https://github.com/ChaLunRon/smart-buy-research
+  repository: https://github.com/ChaLunRon/smart-buy-research
+  keywords:
+    - shopping
+    - reviews
+    - due-diligence
+    - china
 agent_created: true
 ---
 
-# 全网口碑调研与购买决策 v5.1（Smart Buy Research）
+# 全网口碑调研与购买决策 v5.2（Smart Buy Research）
 
 ## 概述
 
