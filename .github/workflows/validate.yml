@@ -33,7 +33,17 @@ jobs:
         # 3.9 与 3.12 分别代表中段与较新的稳定版。
         python-version: ["3.8", "3.9", "3.12"]
     steps:
-      - uses: actions/checkout@v4
+      # actions/* 的大版本决定它跑在哪个 Node 运行时上。checkout 的 v5 与
+      # setup-python 的 v6 是各自**第一个**以 Node 24 为默认的大版本；停在旧大版本
+      # 会让每次运行都带一条 deprecation 警告（Node 20 于 2026-04 EOL，runner 自
+      # 2026-06-02 起默认 Node 24、2026-09-16 起移除 Node 20 二进制），之后会变成失败。
+      #
+      # 这里取「**能消除该警告的最小大版本**」，而不是最新版：
+      # checkout 的 v6 改了凭据持久化方式（Persist creds to a separate file）、
+      # v7 又限制了对 fork PR 的检出；setup-python 的 v7 移除了 `pip-install` 输入。
+      # 本工作流只用 `path` 与 `python-version` 这类最基础的输入，升级没有收益，
+      # 却会引入与本次修正无关的行为变化。下次这两个大版本被弃用时，按同样规则再升一档。
+      - uses: actions/checkout@v5
         with:
           # 先落到中性目录，下面读出 frontmatter 的 `name` 后再改名为同名目录。
           path: _checkout
@@ -62,7 +72,7 @@ jobs:
           echo "skill_dir=$name" >> "$GITHUB_OUTPUT"
           echo "技能目录：$name"
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
 

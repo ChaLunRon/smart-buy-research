@@ -42,7 +42,7 @@ ls SKILL.md       # 必须存在
 > 另外，若要支持 Claude Code 的 `/plugin marketplace add`，仓库根需要有
 > `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`（本仓库已随附）。
 
-本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.6，
+本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.7，
 历史版本各自打了 tag，`git log --oneline` 就能看到完整演进。
 
 ## 二、发布前必做
@@ -73,7 +73,7 @@ cd <仓库根，即含 SKILL.md 的那一层>
 
 git init -b main
 git add .
-git commit -m "Initial public release: 5.6"
+git commit -m "Initial public release: 5.7"
 git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main
 ```
@@ -100,11 +100,11 @@ git push origin --tags
 **用 tag 表达历史，用 Release 提供下载。** 两者都做，各司其职：
 
 ```bash
-git tag -a 5.6 -m "5.6：CI 覆盖 3.8 + Release 自动化"
-git push origin 5.6
+git tag -a 5.7 -m "5.7：CI 依赖跟到 Node 24 + 三处表述修正"
+git push origin 5.7
 ```
 
-- **tag** —— 读者 `git checkout 5.6` 就能拿到完整快照，仓库体积不膨胀。
+- **tag** —— 读者 `git checkout 5.7` 就能拿到完整快照，仓库体积不膨胀。
   这是**版本历史的权威表达**，也是 `git log` / `git diff` 能看出演进的前提。
 - **Release** —— 给「不想 clone 的人」一键下载。**本仓库已自动化**，见下。
 
@@ -114,13 +114,25 @@ git push origin 5.6
 
 推一个形如 `主.次` 的 tag，工作流会自动：
 
-1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-5-6`）；
+1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-5-7`）；
 2. 用 `git archive --prefix=<name>/ <tag>` **从 tag 现算** zip；
 3. 自检这个 zip：顶层目录唯一且等于 `name`、含 `SKILL.md`、不含 `.git` 与缓存；
 4. 建 Release、把 zip 作为附件上传，Release notes 取 `CHANGELOG.md` 的对应小节。
 
 由此得到一条重要性质：**发布物可由 tag 重现** —— 任何人执行同一条 `git archive`
 都能得到逐文件相同的包，不必相信某一次手工打包的结果。
+
+> **口径别写过头**：能承诺的是「**逐文件内容相同**」（判据是 Git 对象指纹
+> `sha1("blob <len>\0" + data)`），**不是**「逐字节相同」。zip 的条目时间戳取构建机器的
+> 本机时间，同一个 tag 在 UTC 与 GMT+8 打出的**容器字节**会不同（差条目数 × 2 处），
+> 而解压后每个文件完全一致。把断言打在 zip 文件哈希上，会得到一个随机变红的流水线。
+
+> **维护提示**：工作流里的 `actions/*` 引用决定它跑在哪个 Node 运行时上，需要定期核对。
+> 停在旧大版本会得到一条警告级的 `Node.js 20 is deprecated`（不影响结论，所以极易长期忽略），
+> 而 runner 自 **2026-06-02** 起默认 Node 24、**2026-09-16** 起移除 Node 20 二进制。
+> **规则是升到「刚好消除该警告的最小大版本」**，而不是一律追最新 —— 大版本跳跃会带入与
+> 本次修正无关的行为变化（例如 `actions/checkout` 的 v6 改了凭据持久化方式，而 `release.yml`
+> 正依赖它持久化的凭据去执行 `git fetch origin main`）。
 
 **回填历史版本**：手动触发该工作流并填 `backfill=all`，它会为每个 tag 补建 Release
 （已存在的自动跳过，可重复触发）。Release notes 一律从 `main` 的 CHANGELOG 取，
@@ -135,8 +147,8 @@ git push origin 5.6
 | `5.1` 起 | 与 tag 同名的 `## 5.x` |
 
 > ⚠️ **别拿 GitHub 为 tag 自动生成的 "Source code" 归档当安装包。**
-> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-5.6`（**点号**）；
-> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-5-6`。
+> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-5.7`（**点号**）；
+> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-5-7`。
 > 下载 Release 里那个 zip 才是开箱即用的。
 
 ### 为什么 Packages 是空的
@@ -162,20 +174,22 @@ git push origin 5.6
 |---|---|
 | 把归档层（含多个版本文件夹）整个推上去 | GitHub 出现多份重复副本；`SKILL.md` 不在仓库根，技能无法被加载 |
 | 改了 `SKILL.md` 的 `name` 却没改目录名 | 规范校验不通过；安装后无法被识别 |
-| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-6` |
-| `name` 里写点号（`5.6`） | 规范只允许小写字母/数字/连字符，必须写 `5-6` |
-| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-5.6`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
+| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-7` |
+| `name` 里写点号（`5.7`） | 规范只允许小写字母/数字/连字符，必须写 `5-7` |
+| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-5.7`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
 | 把中文署名直接当 GitHub 登录名用 | GitHub 登录名只允许 ASCII，`https://github.com/<中文名>/...` **打不开**、徽章裂图。正文署名可以留中文，但**凡是填进 URL 的 owner 必须是 ASCII**；`validate_skill.py` 第 12 项会清点残留的模板占位符 |
 | 每个版本建一个新仓库 | 版本历史断成互不相干的仓库，无法 diff、无法追溯 |
 | 忘了推 tag | 本地有历史，GitHub 上只有最新一版 |
+| 把 `actions/*` 钉在旧大版本 | 每次运行都带一条 `Node.js 20 is deprecated` 警告；**警告级所以极易长期忽略**，而 runner 自 **2026-06-02** 起默认 Node 24、**2026-09-16** 起移除 Node 20 二进制，届时会变成失败。本仓库用 `actions/checkout@v5` + `actions/setup-python@v6` |
+| 改完 CI 后拿**历史运行**判断现状 | GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**。判断现状只看**最新一次运行的结论**，并确认它的 `head_sha` 在当前 `main` 的祖先链上（被 `--amend` 重写掉的提交会变成孤儿对象，记录却还挂在 Actions 列表里；旧运行上的注解也不会因修好而消失） |
 
 ## 七、版本命名规则速查
 
 | 场合 | 写法 | 说明 |
 |---|---|---|
-| 文档正文 / `metadata.version` | `5.6` | 标准两级写法 |
-| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-6` | 规范禁止点号，必须用连字符 |
-| git tag | `5.6` 或 `v5.6` | 与 `metadata.version` 对齐最省事 |
+| 文档正文 / `metadata.version` | `5.7` | 标准两级写法 |
+| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-7` | 规范禁止点号，必须用连字符 |
+| git tag | `5.7` 或 `v5.7` | 与 `metadata.version` 对齐最省事 |
 
 **三条命名必须完全一致**（zip 名 / 目录名 / `name` 字段），否则同时安装多个版本会触发名冲突。
 详见 [CONTRIBUTING.md](../CONTRIBUTING.md)。

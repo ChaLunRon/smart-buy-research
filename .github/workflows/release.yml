@@ -6,14 +6,17 @@ name: release
 # 分开就能把写权限限制在真正需要的这一条路径上，不放大例行检查的权限。
 #
 # zip 不是手工打的，而是用 `git archive` 从 tag 现算 —— 这样发布物**可由 tag 重现**：
-# 任何人执行 `git archive --prefix=<name>/ <tag>` 都能得到逐文件相同的包。
-# 仓库内 41 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
+# 任何人执行 `git archive --prefix=<name>/ <tag>` 都能得到**逐文件内容相同**的包。
+# 注意口径：能承诺的是「逐文件相同」（Git 对象指纹一致），**不是「逐字节相同」** ——
+# zip 的条目时间戳取构建机器的本机时间，同一 tag 在 UTC 与 GMT+8 打出的容器字节会差
+# 条目数 × 2 处（local header 与 central directory 各一处）。所以下面的断言打在内容层。
+# 仓库内 42 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
 # 所以 `git archive` 不会改动行尾。
 #
 # zip 的顶层目录名取该 tag 的 `SKILL.md` 里的 `name`。这点是关键：
 # GitHub 为 tag 自动生成的 "Source code" 归档，顶层目录是 `{仓库名}-{tag}`（**点号**，
-# 如 `smart-buy-research-5.6`），而技能规范要求 `name` 与目录名一致且**点号非法**
-# （必须写成 `smart-buy-research-5-6`）。直接下载自动归档再改名容易漏，
+# 如 `smart-buy-research-5.7`），而技能规范要求 `name` 与目录名一致且**点号非法**
+# （必须写成 `smart-buy-research-5-7`）。直接下载自动归档再改名容易漏，
 # 所以这里附一个解压即可用的 zip。
 
 on:
@@ -39,7 +42,12 @@ jobs:
     name: 建 Release 并附 zip
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
+      # 钉 v5 而不是最新的 v7：v5 是**第一个**以 Node 24 为默认的大版本，已经足够
+      # 消除 Node 20 弃用警告；而 v6 把凭据从 `.git/config` 改存到单独文件，
+      # 本工作流下面要执行 `git fetch origin main`，依赖的正是检出动作持久化的凭据，
+      # 在无法本地复现 CI 的前提下不值得为「更新」冒这个行为变化。
+      # v7 另有「对 fork PR 限制检出」的变更，本工作流不涉及。
+      - uses: actions/checkout@v5
         with:
           # 回填要能枚举全部 tag；同时要能读到 main 上的 CHANGELOG
           fetch-depth: 0

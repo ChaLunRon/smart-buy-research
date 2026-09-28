@@ -1,7 +1,7 @@
 # Smart Buy Research · 全网口碑调研与购买决策
 
 <p>
-  <img alt="version" src="https://img.shields.io/badge/version-5.6-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-5.7-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-yellow">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen">
@@ -72,7 +72,7 @@
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-6
+  ~/.workbuddy/skills/smart-buy-research-5-7
 ```
 
 装好后直接说人话：
@@ -89,9 +89,9 @@ Agent 会自动加载本技能。要详细版就在追问里说「详细说说�
 这是一个标准的 Agent Skill（`SKILL.md` + `references/` + `scripts/`），遵循
 [Agent Skills 规范](https://agentskills.io/specification)。
 
-> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-6`），
+> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-7`），
 > 这是规范要求，否则校验不通过。注意 `name` 里**不能出现点号**，
-> 所以版本 `5.6` 写作 `5-6`。
+> 所以版本 `5.7` 写作 `5-7`。
 
 > **下面 `git clone` 地址里的 `ChaLunRon` 就是本仓库的 GitHub 所有者名**
 > （GitHub 登录名只允许 ASCII 字母/数字/连字符）。
@@ -102,23 +102,23 @@ Agent 会自动加载本技能。要详细版就在追问里说「详细说说�
 > 只在本地用的话，把仓库目录整个复制到技能目录即可，不必 clone。
 
 **不想用 git？** 到 [Releases](https://github.com/ChaLunRon/smart-buy-research/releases)
-下载最新版的 `smart-buy-research-5-6.zip`，解压后把整个目录放进技能目录即可。
-包里的顶层目录名已经是 `smart-buy-research-5-6`，**不要改名、也不要再套一层**。
+下载最新版的 `smart-buy-research-5-7.zip`，解压后把整个目录放进技能目录即可。
+包里的顶层目录名已经是 `smart-buy-research-5-7`，**不要改名、也不要再套一层**。
 
 ```bash
 # 用户级安装（对所有项目生效，macOS / Linux）
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-6
+  ~/.workbuddy/skills/smart-buy-research-5-7
 ```
 
 Windows：
 
 ```powershell
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-6"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-7"
 ```
 
-也可手动指定 `/smart-buy-research-5-6` 调用。**Claude Code 及其他 Agent 的安装方式**
+也可手动指定 `/smart-buy-research-5-7` 调用。**Claude Code 及其他 Agent 的安装方式**
 （marketplace / Cursor / Windsurf / Codex / Copilot）见
 [docs/getting-started.md](./docs/getting-started.md)。
 
@@ -174,7 +174,7 @@ XX 和 YY 哪个好？
 | 环境 | `.editorconfig` `.gitattributes` `.gitignore` | 统一行尾 LF / UTF-8，防止跨平台 diff 噪音 |
 
 ```
-smart-buy-research-5-6/
+smart-buy-research-5-7/
 ├── .claude-plugin/                 # Claude Code 插件清单
 │   ├── marketplace.json            # 市场清单（name / owner / plugins）
 │   └── plugin.json                 # 插件清单（只需 name）
@@ -214,7 +214,7 @@ smart-buy-research-5-6/
 ├── SECURITY.md                     # 安全政策（含提示注入风险说明）
 ├── CODE_OF_CONDUCT.md              # 贡献者公约（含本项目特有红线）
 ├── AGENTS.md                       # 给 AI 编码代理的仓库说明
-├── CHANGELOG.md                    # v1 → 5.6 版本演进
+├── CHANGELOG.md                    # v1 → 5.7 版本演进
 ├── CITATION.cff                    # 引用元数据
 ├── THIRD_PARTY_NOTICES.md          # 第三方声明（本项目无第三方代码依赖）
 ├── LICENSE                         # MIT
@@ -240,19 +240,26 @@ python -m unittest discover -s tests -v       # 106 个单元测试
 
 测试只跑离线用例（网络层用桩替换），**不会因为平台风控而随机变红**。
 
+**CI 的依赖也要定期核对**：两个工作流里的 `actions/*` 引用决定它跑在哪个 Node 运行时上。
+钉在旧大版本会得到一条 `Node.js 20 is deprecated` 注解 —— 它是**警告级、不影响结论**，
+所以很容易被长期忽略，但 runner 自 **2026-06-02** 起默认 Node 24、**2026-09-16** 起移除
+Node 20 二进制，届时旧 action 会在没测过的运行时上跑。本仓库当前用
+`actions/checkout@v5` 与 `actions/setup-python@v6`，各自是**第一个**以 Node 24 为默认的大版本。
+判据是**看最新一次运行的注解**，不是看历史运行 —— 历史运行是只读快照，修好后仍显示原样。
+
 ## 版本命名规则
 
 采用 **`主版本.次版本`** 两级编号，但目录名与 `name` 字段要满足规范字符集：
 
 | 变更性质 | 版本动作 | 示例 |
 |---|---|---|
-| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.6` → `5.7` |
-| 新增能力、改变输出结构或判断纪律 | 大版本 +1 | `5.6` → `6.0` |
+| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.7` → `5.8` |
+| 新增能力、改变输出结构或判断纪律 | 大版本 +1 | `5.7` → `6.0` |
 
 | 场合 | 写法 | 原因 |
 |---|---|---|
-| 文档正文、`metadata.version`、git tag | `5.6` | 标准版本写法，可读 |
-| `name` 字段、目录名、zip 文件名 | `smart-buy-research-5-6` | 规范只允许小写字母/数字/连字符，**点号非法** |
+| 文档正文、`metadata.version`、git tag | `5.7` | 标准版本写法，可读 |
+| `name` 字段、目录名、zip 文件名 | `smart-buy-research-5-7` | 规范只允许小写字母/数字/连字符，**点号非法** |
 
 三者**必须完全一致**，否则同时安装多个版本会触发名冲突。
 
@@ -319,7 +326,7 @@ python scripts/price_tracker.py report < bad.json
 
 ## 版本历史
 
-本仓库的工作版本是 **5.6**。历史版本用 **git tag** 表达，不是并列的文件夹 ——
+本仓库的工作版本是 **5.7**。历史版本用 **git tag** 表达，不是并列的文件夹 ——
 这样 `git log`／`git diff` 才能看出每一步改了什么。
 
 ```bash
@@ -330,7 +337,8 @@ git checkout 5.0         # 取某个历史快照
 
 | tag | 主题 | 一句话 |
 |---|---|---|
-| `5.6` | **当前版本**：CI 真跑 3.8 + 发布自动化 | 让「支持 Python 3.8+」这句声明由 CI 自己证明；新增 `release.yml`：推 tag 即自动建 Release 并附「解压即可用」的 zip（由 tag 现算、可重现） |
+| `5.7` | **当前版本**：CI 依赖跟到 Node 24 + 三处表述修正 | 升级 `actions/checkout` v4→v5、`actions/setup-python` v5→v6，消掉 Node 20 弃用警告；更正「打包结果与平台无关」的口径（只能承诺**逐文件内容相同**）；修正 `release.yml` 注释里「41 个文件」为 42 |
+| `5.6` | CI 真跑 3.8 + 发布自动化 | 让「支持 Python 3.8+」这句声明由 CI 自己证明；新增 `release.yml`：推 tag 即自动建 Release 并附「解压即可用」的 zip（由 tag 现算、可重现） |
 | `5.5` | 公开文档口径修正 | 平台可读性结论去掉第一人称环境指代（「本机网络下不可读」→「受限」）；补回 5.3 时被截断的 v1–5.1 变更历史 |
 | `5.4` | 官方 noreply + 插件清单 | 邮箱换成**带数字 ID** 的官方 noreply 地址（不带 ID 的写法不计入贡献图）；新增 `.claude-plugin/` 清单，`/plugin` 安装路径恢复可用 |
 | `5.3` | 历史署名同步 | 九个历史快照与 tag 的旧署名全部改为 `ChaLunRon`；邮箱改为 GitHub noreply；修正 `docs/getting-started.md` 里跑不通的安装命令 |
@@ -349,8 +357,8 @@ git checkout 5.0         # 取某个历史快照
 > 因此与 tag 内容一致、**可重现** —— 不依赖任何一次手工打包。
 >
 > 安装请用 Release 里的 zip，**不要**用 GitHub 为 tag 自动生成的 "Source code" 归档：
-> 后者的顶层目录是 `smart-buy-research-5.6`（**点号**），与 `name` 要求的
-> `smart-buy-research-5-6`（连字符）不一致，放进去会校验不通过。
+> 后者的顶层目录是 `smart-buy-research-5.7`（**点号**），与 `name` 要求的
+> `smart-buy-research-5-7`（连字符）不一致，放进去会校验不通过。
 
 > **关于 4.1 / 4.2**：这两个 tag 对应的内容**早于 5.0**，是 5.0 开发周期中的两个中间态。
 > 它们曾是归档目录里的「v6」「v7」——那是**超前的号位标注**，已按内容真实进度更正。
@@ -361,7 +369,7 @@ git checkout 5.0         # 取某个历史快照
 > 只补了仓库治理文件，**没有给技能增加任何能力**，因此不该占一个大版本，更正为 `5.1`。
 > 号位 `8.0` / `8.1` 随之**作废不再复用**。判定依据与完整证据见 `CHANGELOG.md`。
 >
-> `4.1` / `4.2` **不是**独立发布版，正常使用请从 `5.6` 取。
+> `4.1` / `4.2` **不是**独立发布版，正常使用请从 `5.7` 取。
 
 ## 发布到 GitHub
 
@@ -371,7 +379,7 @@ git checkout 5.0         # 取某个历史快照
 ```bash
 # 0) 身份已定稿：署名与 URL 里的 owner = ChaLunRon，邮箱 = GitHub noreply
 python tools/validate_skill.py .                           # 1) 自检（第 12 项数出剩余占位值）
-git init -b main && git add . && git commit -m "Initial public release: 5.6"
+git init -b main && git add . && git commit -m "Initial public release: 5.7"
 git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main --tags
 ```
