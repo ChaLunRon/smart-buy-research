@@ -1,0 +1,14 @@
+{
+  "name": "smart-buy-research",
+  "owner": {
+    "name": "ChaLunRon",
+    "url": "https://github.com/ChaLunRon"
+  },
+  "plugins": [
+    {
+      "name": "smart-buy-research-5-4",
+      "source": ".",
+      "description": "全网商品口碑调研与购买决策技能：垃圾源黑名单过滤 + 必带垂直社区来源 + 交叉验证 + 厂商资质核验 + 反水军特征库。"
+    }
+  ]
+}

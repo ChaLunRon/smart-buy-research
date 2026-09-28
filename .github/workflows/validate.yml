@@ -28,19 +28,50 @@ jobs:
         python-version: ["3.9", "3.12"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 先落到中性目录，下面读出 frontmatter 的 `name` 后再改名为同名目录。
+          path: _checkout
+
+      # 技能规范要求 frontmatter 的 `name` 与「所在目录名」完全一致，而 Actions 的
+      # 检出目录固定是仓库名（smart-buy-research，**没有版本后缀**）—— 直接在检出目录
+      # 里跑校验必然报「name 与目录名不一致」。这是环境差异，不是内容问题，
+      # 所以先把检出内容搬进以 `name` 命名的目录，后续步骤一律在那里执行。
+      # 同样的坑对直接 `git clone` 的人也成立，见 docs/publishing.md。
+      - name: 按 SKILL.md 的 name 建立同名目录
+        id: layout
+        run: |
+          set -eu
+          name="$(python - <<'PY'
+          import pathlib
+          import re
+
+          front = pathlib.Path("_checkout/SKILL.md").read_text(encoding="utf-8").split("---", 2)[1]
+          match = re.search(r"^name:[ \t]*([a-z0-9-]+)[ \t]*$", front, re.M)
+          if not match:
+              raise SystemExit("SKILL.md 的 frontmatter 里读不到 name")
+          print(match.group(1))
+          PY
+          )"
+          mv _checkout "$name"
+          echo "skill_dir=$name" >> "$GITHUB_OUTPUT"
+          echo "技能目录：$name"
 
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: 显示环境
+        working-directory: ${{ steps.layout.outputs.skill_dir }}
         run: python -VV
 
       - name: 技能结构规范自检
+        working-directory: ${{ steps.layout.outputs.skill_dir }}
         run: python tools/validate_skill.py . --quiet
 
       - name: 脚本语法检查
+        working-directory: ${{ steps.layout.outputs.skill_dir }}
         run: python -m compileall -q scripts tools
 
       - name: 单元测试
+        working-directory: ${{ steps.layout.outputs.skill_dir }}
         run: python -m unittest discover -s tests -v

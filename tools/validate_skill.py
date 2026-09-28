@@ -160,9 +160,18 @@ def check_name(rep, fm, root):
                  "不得以连字符开头结尾、不得有连续连字符）：%r" % name)
     else:
         rep.ok("`name` 字符集合法：%s" % name)
-    if name != os.path.basename(os.path.abspath(root)):
-        rep.fail("`name`（%s）必须与所在目录名（%s）一致"
-                 % (name, os.path.basename(os.path.abspath(root))))
+    actual_dir = os.path.basename(os.path.abspath(root))
+    if name != actual_dir:
+        msg = "`name`（%s）必须与所在目录名（%s）一致" % (name, actual_dir)
+        # 最常见的成因不是谁写错了名字，而是**检出目录用了仓库名**：
+        # GitHub Actions 的 checkout 固定落到 `<仓库名>/`，而仓库名不带版本后缀。
+        # 把这种情况单独点出来，省得看到报错的人以为是内容出了问题。
+        if re.sub(r"-\d+-\d+$", "", name) == actual_dir:
+            msg += ("\n        看起来这是从 GitHub 克隆/检出的目录（仓库名 %s 不带版本后缀）。"
+                    "\n        规范要求两者一致：把目录重命名为 %s 后再跑校验"
+                    "\n        （CI 里的做法见 .github/workflows/validate.yml，"
+                    "或直接 `git clone <url> %s`）。" % (actual_dir, name, name))
+        rep.fail(msg)
     else:
         rep.ok("`name` 与目录名一致：%s" % name)
     lowered = name.lower()

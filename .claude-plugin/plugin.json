@@ -1,0 +1,19 @@
+{
+  "name": "smart-buy-research-5-4",
+  "displayName": "Smart Buy Research 5.4",
+  "version": "5.4",
+  "description": "全网商品口碑调研与购买决策技能。",
+  "author": {
+    "name": "ChaLunRon",
+    "url": "https://github.com/ChaLunRon"
+  },
+  "homepage": "https://github.com/ChaLunRon/smart-buy-research",
+  "repository": "https://github.com/ChaLunRon/smart-buy-research",
+  "license": "MIT",
+  "keywords": [
+    "agent-skills",
+    "shopping",
+    "reviews",
+    "china"
+  ]
+}

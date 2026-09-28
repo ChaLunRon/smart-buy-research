@@ -4,10 +4,10 @@
 
 ## 通用前提
 
-技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-3`）。
+技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-4`）。
 这是 Agent Skills 规范的硬要求，改错会导致校验不通过或加载失败。
 
-注意 `name` 里**不能出现点号**，所以版本 `5.3` 写作 `5-3`。
+注意 `name` 里**不能出现点号**，所以版本 `5.4` 写作 `5-4`。
 
 ## 按运行时安装
 
@@ -18,27 +18,37 @@
 ```bash
 # macOS / Linux
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-3
+  ~/.workbuddy/skills/smart-buy-research-5-4
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-3"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-4"
 ```
 
-**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-3`。
+**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-4`。
 
 ### Claude Code
 
-本仓库**不随附** `.claude-plugin/` 插件清单，因此 `/plugin marketplace add ...`
-这类命令对它不适用 —— 直接克隆到 Claude Code 的技能目录即可
+**路径 A（推荐）：作为插件安装。** 本仓库随附 `.claude-plugin/marketplace.json`
+与 `.claude-plugin/plugin.json`，因此可以用 Claude Code 的插件市场直接装：
+
+```bash
+/plugin marketplace add ChaLunRon/smart-buy-research
+/plugin install smart-buy-research-5-4@smart-buy-research
+```
+
+**路径 B：克隆到技能目录。** 不想要插件机制的话，直接克隆即可
 （个人级一般是 `~/.claude/skills/`），`SKILL.md` 会被按 Agent Skills 规范自动发现：
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.claude/skills/smart-buy-research-5-3
+  ~/.claude/skills/smart-buy-research-5-4
 ```
+
+> 仓库根同时是插件根：根目录直接放着 `SKILL.md`、没有 `skills/` 子目录，
+> 按 Claude Code 的规则会**作为单个技能加载**。
 
 ### 其他 Agent（Cursor / Windsurf / Codex / Copilot 等）
 
