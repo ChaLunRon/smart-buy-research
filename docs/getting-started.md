@@ -4,10 +4,10 @@
 
 ## 通用前提
 
-技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-2`）。
+技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-3`）。
 这是 Agent Skills 规范的硬要求，改错会导致校验不通过或加载失败。
 
-注意 `name` 里**不能出现点号**，所以版本 `5.2` 写作 `5-2`。
+注意 `name` 里**不能出现点号**，所以版本 `5.3` 写作 `5-3`。
 
 ## 按运行时安装
 
@@ -18,29 +18,26 @@
 ```bash
 # macOS / Linux
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-2
+  ~/.workbuddy/skills/smart-buy-research-5-3
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-2"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-3"
 ```
 
-**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-2`。
+**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-3`。
 
 ### Claude Code
 
-```bash
-/plugin marketplace add ChaLunRon/smart-buy-research
-/plugin install smart-buy-research@ChaLunRon
-```
-
-若 marketplace 克隆走 SSH 报 `Permission denied (publickey)`，用完整 HTTPS URL
-或在本地配置一次 URL 重写：
+本仓库**不随附** `.claude-plugin/` 插件清单，因此 `/plugin marketplace add ...`
+这类命令对它不适用 —— 直接克隆到 Claude Code 的技能目录即可
+（个人级一般是 `~/.claude/skills/`），`SKILL.md` 会被按 Agent Skills 规范自动发现：
 
 ```bash
-git config --global url."https://github.com/".insteadOf git@github.com:
+git clone https://github.com/ChaLunRon/smart-buy-research.git \
+  ~/.claude/skills/smart-buy-research-5-3
 ```
 
 ### 其他 Agent（Cursor / Windsurf / Codex / Copilot 等）

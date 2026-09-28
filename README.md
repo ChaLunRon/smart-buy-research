@@ -1,7 +1,7 @@
 # Smart Buy Research · 全网口碑调研与购买决策
 
 <p>
-  <img alt="version" src="https://img.shields.io/badge/version-5.2-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-5.3-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-yellow">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen">
@@ -72,7 +72,7 @@
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-2
+  ~/.workbuddy/skills/smart-buy-research-5-3
 ```
 
 装好后直接说人话：
@@ -89,9 +89,9 @@ Agent 会自动加载本技能。要详细版就在追问里说「详细说说�
 这是一个标准的 Agent Skill（`SKILL.md` + `references/` + `scripts/`），遵循
 [Agent Skills 规范](https://agentskills.io/specification)。
 
-> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-2`），
+> **安装目录名必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-3`），
 > 这是规范要求，否则校验不通过。注意 `name` 里**不能出现点号**，
-> 所以版本 `5.2` 写作 `5-2`。
+> 所以版本 `5.3` 写作 `5-3`。
 
 > **下面 `git clone` 地址里的 `ChaLunRon` 就是本仓库的 GitHub 所有者名**
 > （GitHub 登录名只允许 ASCII 字母/数字/连字符）。
@@ -104,17 +104,17 @@ Agent 会自动加载本技能。要详细版就在追问里说「详细说说�
 ```bash
 # 用户级安装（对所有项目生效，macOS / Linux）
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-2
+  ~/.workbuddy/skills/smart-buy-research-5-3
 ```
 
 Windows：
 
 ```powershell
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-2"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-3"
 ```
 
-也可手动指定 `/smart-buy-research-5-2` 调用。**Claude Code 及其他 Agent 的安装方式**
+也可手动指定 `/smart-buy-research-5-3` 调用。**Claude Code 及其他 Agent 的安装方式**
 （marketplace / Cursor / Windsurf / Codex / Copilot）见
 [docs/getting-started.md](./docs/getting-started.md)。
 
@@ -170,7 +170,7 @@ XX 和 YY 哪个好？
 | 环境 | `.editorconfig` `.gitattributes` `.gitignore` | 统一行尾 LF / UTF-8，防止跨平台 diff 噪音 |
 
 ```
-smart-buy-research-5-2/
+smart-buy-research-5-3/
 ├── SKILL.md                        # 技能主体（Agent 加载入口，约 400 行）
 ├── references/                     # 按需加载的方法论（不进上下文）
 │   ├── methodology.md              # Step 1–5 完整工作流
@@ -206,7 +206,7 @@ smart-buy-research-5-2/
 ├── SECURITY.md                     # 安全政策（含提示注入风险说明）
 ├── CODE_OF_CONDUCT.md              # 贡献者公约（含本项目特有红线）
 ├── AGENTS.md                       # 给 AI 编码代理的仓库说明
-├── CHANGELOG.md                    # v1 → 5.2 版本演进
+├── CHANGELOG.md                    # v1 → 5.3 版本演进
 ├── CITATION.cff                    # 引用元数据
 ├── THIRD_PARTY_NOTICES.md          # 第三方声明（本项目无第三方代码依赖）
 ├── LICENSE                         # MIT
@@ -238,13 +238,13 @@ python -m unittest discover -s tests -v       # 106 个单元测试
 
 | 变更性质 | 版本动作 | 示例 |
 |---|---|---|
-| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.2` → `5.3` |
+| 修正错字、死链、过期平台实测、错别信息 | 次版本 +1 | `5.3` → `5.4` |
 | 新增能力、改变输出结构或判断纪律 | 大版本 +1 | `5.3` → `6.0` |
 
 | 场合 | 写法 | 原因 |
 |---|---|---|
-| 文档正文、`metadata.version`、git tag | `5.2` | 标准版本写法，可读 |
-| `name` 字段、目录名、zip 文件名 | `smart-buy-research-5-2` | 规范只允许小写字母/数字/连字符，**点号非法** |
+| 文档正文、`metadata.version`、git tag | `5.3` | 标准版本写法，可读 |
+| `name` 字段、目录名、zip 文件名 | `smart-buy-research-5-3` | 规范只允许小写字母/数字/连字符，**点号非法** |
 
 三者**必须完全一致**，否则同时安装多个版本会触发名冲突。
 
@@ -311,7 +311,7 @@ python scripts/price_tracker.py report < bad.json
 
 ## 版本历史
 
-本仓库的工作版本是 **5.2**。历史版本用 **git tag** 表达，不是并列的文件夹 ——
+本仓库的工作版本是 **5.3**。历史版本用 **git tag** 表达，不是并列的文件夹 ——
 这样 `git log`／`git diff` 才能看出每一步改了什么。
 
 ```bash
@@ -322,7 +322,8 @@ git checkout 5.0         # 取某个历史快照
 
 | tag | 主题 | 一句话 |
 |---|---|---|
-| `5.2` | **当前版本**：可发布性修复 | 恢复 frontmatter 三字段、补 CI 与 106 个测试、修正历史版本归属 |
+| `5.3` | **当前版本**：历史署名同步 | 九个历史快照与 tag 的旧署名全部改为 `ChaLunRon`；邮箱改为 GitHub noreply；修正 `docs/getting-started.md` 里跑不通的安装命令 |
+| `5.2` | 可发布性修复 | 恢复 frontmatter 三字段、补 CI 与 106 个测试、修正历史版本归属 |
 | `5.1` | 开源仓库就绪 | 补齐治理层（`AGENTS.md`、`docs/`、`.gitattributes`），全版本命名规范化 |
 | `5.0` | 合规整改 + 体积压缩 | `SKILL.md` 从 636 行压到 400 行内；三轮审计（国补两通道、渠道类型、traceback 兜底） |
 | `4.2` | 5.0 开发中期快照（*无语义版本*） | 已压缩 SKILL.md 但审计补丁未落地；仅作开发史留档 |
@@ -341,7 +342,7 @@ git checkout 5.0         # 取某个历史快照
 > 只补了仓库治理文件，**没有给技能增加任何能力**，因此不该占一个大版本，更正为 `5.1`。
 > 号位 `8.0` / `8.1` 随之**作废不再复用**。判定依据与完整证据见 `CHANGELOG.md`。
 >
-> `4.1` / `4.2` **不是**独立发布版，正常使用请从 `5.2` 取。
+> `4.1` / `4.2` **不是**独立发布版，正常使用请从 `5.3` 取。
 
 ## 发布到 GitHub
 
@@ -349,13 +350,10 @@ git checkout 5.0         # 取某个历史快照
 那样 GitHub 上会出现多份重复副本，而且 `SKILL.md` 不在根目录会导致技能装不上。
 
 ```bash
-# 0) 署名 / URL 里的 owner / 邮箱目前**统一用占位值**，发布前一起换成真实值：
-#      · 正文署名 + metadata.author + CITATION.cff + LICENSE   → 你的名字（可中文）
-#      · 所有 github.com/<owner>/ 里的 owner                    → 你的 GitHub 登录名（必须 ASCII）
-#      · git config user.email                                  → 你的邮箱
+# 0) 身份已定稿：署名与 URL 里的 owner = ChaLunRon，邮箱 = GitHub noreply
 python tools/validate_skill.py .                           # 1) 自检（第 12 项数出剩余占位值）
-git init -b main && git add . && git commit -m "Initial public release: 5.2"
-git remote add origin https://github.com/<你的登录名>/smart-buy-research.git
+git init -b main && git add . && git commit -m "Initial public release: 5.3"
+git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main --tags
 ```
 

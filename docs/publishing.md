@@ -23,7 +23,7 @@
 ls SKILL.md       # 必须存在
 ```
 
-如果根目录下能看到 `smart-buy-research-5-1/`、`smart-buy-research-5-2/` 这种**并列的版本文件夹**，
+如果根目录下能看到 `smart-buy-research-5-1/`、`smart-buy-research-5-3/` 这种**并列的版本文件夹**，
 说明你把归档层当成了仓库根。这样推上去，GitHub 上会出现多份高度重复的副本，
 既看不出演进脉络，也会让 `SKILL.md` 不在仓库根而无法被技能发现。
 
@@ -31,14 +31,14 @@ ls SKILL.md       # 必须存在
 ❌ 归档层的结构（用于本地留存）        ✅ 仓库根应有的结构
    archive-note/                         .
    ├── 5.1/                              ├── SKILL.md
-   ├── 5.2/                              ├── references/
+   ├── 5.3/                              ├── references/
    └── 5.0/                              ├── scripts/
                                          └── ...
 ```
 
 **版本历史用 git tag 表达，不用并列文件夹表达**（见第五节）。
 
-本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.2，
+本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.3，
 历史版本各自打了 tag，`git log --oneline` 就能看到完整演进。
 
 ## 二、发布前必做
@@ -50,7 +50,7 @@ ls SKILL.md       # 必须存在
 # 1. 换成你自己的身份（括号内为当前值）
 #    · 正文署名 + metadata.author + CITATION.cff + LICENSE （现为 ChaLunRon）
 #    · 所有 github.com/<owner>/ 里的 owner                  （现为 ChaLunRon，必须 ASCII）
-#    · 邮箱 + git config user.email                         （现为 201579029+ChaLunRon@users.noreply.github.com）
+#    · 邮箱 + git config user.email                         （现为 GitHub noreply 地址）
 
 # 2. 自检：结构规范 + 链接 + 行尾 + 脚本可编译 + 版本一致性 + 剩余占位值
 python tools/validate_skill.py .
@@ -68,7 +68,7 @@ cd <仓库根，即含 SKILL.md 的那一层>
 
 git init -b main
 git add .
-git commit -m "Initial public release: 5.2"
+git commit -m "Initial public release: 5.3"
 git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main
 ```
@@ -96,11 +96,11 @@ git push origin --tags
 **做法 A（推荐）：用 tag，不放 zip**
 
 ```bash
-git tag -a 5.2 -m "5.2：恢复 frontmatter、补 CI 与测试"
-git push origin 5.2
+git tag -a 5.3 -m "5.3：历史署名同步 + 邮箱改为 noreply"
+git push origin 5.3
 ```
 
-读者用 `git checkout 5.2` 就能拿到完整快照，仓库体积也不膨胀。
+读者用 `git checkout 5.3` 就能拿到完整快照，仓库体积也不膨胀。
 
 **做法 B：Release 附件**
 
@@ -115,8 +115,8 @@ git push origin 5.2
 |---|---|
 | 把归档层（含多个版本文件夹）整个推上去 | GitHub 出现多份重复副本；`SKILL.md` 不在仓库根，技能无法被加载 |
 | 改了 `SKILL.md` 的 `name` 却没改目录名 | 规范校验不通过；安装后无法被识别 |
-| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-2` |
-| `name` 里写点号（`5.2`） | 规范只允许小写字母/数字/连字符，必须写 `5-2` |
+| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-3` |
+| `name` 里写点号（`5.3`） | 规范只允许小写字母/数字/连字符，必须写 `5-3` |
 | 把中文署名直接当 GitHub 登录名用 | GitHub 登录名只允许 ASCII，`https://github.com/<中文名>/...` **打不开**、徽章裂图。正文署名可以留中文，但**凡是填进 URL 的 owner 必须是 ASCII**；`validate_skill.py` 第 12 项会清点残留的模板占位符 |
 | 每个版本建一个新仓库 | 版本历史断成互不相干的仓库，无法 diff、无法追溯 |
 | 忘了推 tag | 本地有历史，GitHub 上只有最新一版 |
@@ -125,9 +125,9 @@ git push origin 5.2
 
 | 场合 | 写法 | 说明 |
 |---|---|---|
-| 文档正文 / `metadata.version` | `5.2` | 标准两级写法 |
-| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-2` | 规范禁止点号，必须用连字符 |
-| git tag | `5.2` 或 `v5.2` | 与 `metadata.version` 对齐最省事 |
+| 文档正文 / `metadata.version` | `5.3` | 标准两级写法 |
+| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-3` | 规范禁止点号，必须用连字符 |
+| git tag | `5.3` 或 `v5.3` | 与 `metadata.version` 对齐最省事 |
 
 **三条命名必须完全一致**（zip 名 / 目录名 / `name` 字段），否则同时安装多个版本会触发名冲突。
 详见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
