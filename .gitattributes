@@ -20,6 +20,15 @@
 LICENSE   text eol=lf
 Makefile  text eol=lf
 
+# 下面三个文件原先只被上面的 `* text=auto` 覆盖、**没有显式 `eol`**。
+# 后果：`git archive` 对它们按 `core.eol`（默认 native）转换行尾 ——
+# Windows 上产出 CRLF、Linux 上产出 LF，于是**同一个 tag 会打出两个不同的 zip**。
+# 实测症状：`git archive` 出的包与 tag 里的 blob 逐字节比对时，恰好只有这 3 个文件不同。
+# 显式钉成 LF，使 Release 资产跨平台逐字节可重现。
+.editorconfig  text eol=lf
+.gitattributes text eol=lf
+.gitignore     text eol=lf
+
 # 明确声明为二进制，禁止任何转换
 *.png     binary
 *.jpg     binary

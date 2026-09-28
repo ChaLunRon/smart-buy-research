@@ -9,6 +9,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+# 本工作流只读：建 Release 需要写权限，单独放在 release.yml 里，
+# 这样例行检查不会带着多余的写权限。
+
 permissions:
   contents: read
 
@@ -20,12 +23,15 @@ jobs:
   validate:
     name: 规范自检 + 单元测试 (py${{ matrix.python-version }})
     # 固定 ubuntu-22.04 而不是 ubuntu-latest：后者已升到 24.04，
-    # setup-python 在上面拿不到 3.9 的构建产物，会让矩阵随机挂掉。
+    # setup-python 在上面拿不到旧版本 Python 的构建产物，会让矩阵随机挂掉。
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.12"]
+        # README、`SKILL.md` 的 compatibility 与 docs 都声明支持 **3.8+**，
+        # 这里必须真去跑 3.8 —— 否则那句声明只是没人验证过的断言。
+        # 3.9 与 3.12 分别代表中段与较新的稳定版。
+        python-version: ["3.8", "3.9", "3.12"]
     steps:
       - uses: actions/checkout@v4
         with:
