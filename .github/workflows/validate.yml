@@ -47,7 +47,7 @@ jobs:
       # 5.9 起一律钉到**完整 SHA**（并保留版本注释）。SHA 钉死之后不会自己更新，
       # 所以 `.github/dependabot.yml` 必须同时存在：它认得 SHA 形式，提 PR 时会把
       # SHA 与注释里的版本号一起改掉。只钉 SHA 而不配 dependabot 反而更腐坏。
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # 先落到中性目录，下面读出 frontmatter 的 `name` 后再改名为同名目录。
           path: _checkout
@@ -76,7 +76,7 @@ jobs:
           echo "skill_dir=$name" >> "$GITHUB_OUTPUT"
           echo "技能目录：$name"
 
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python-version }}
 
