@@ -15,8 +15,8 @@ name: release
 #
 # zip 的顶层目录名取该 tag 的 `SKILL.md` 里的 `name`。这点是关键：
 # GitHub 为 tag 自动生成的 "Source code" 归档，顶层目录是 `{仓库名}-{tag}`（**点号**，
-# 如 `smart-buy-research-5.7`），而技能规范要求 `name` 与目录名一致且**点号非法**
-# （必须写成 `smart-buy-research-5-7`）。直接下载自动归档再改名容易漏，
+# 如 `smart-buy-research-5.8`），而技能规范要求 `name` 与目录名一致且**点号非法**
+# （必须写成 `smart-buy-research-5-8`）。直接下载自动归档再改名容易漏，
 # 所以这里附一个解压即可用的 zip。
 
 on:
