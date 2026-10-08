@@ -18,15 +18,19 @@ Agent Skill 自检工具（纯标准库，无需任何第三方依赖）。
   4. SKILL.md 正文字数（不含 frontmatter）< 500 行
   5. references/ 下每个 >100 行的文件必须有 `## 目录`
   6. references/ 之间**不得互相引用**（引用只能有一层深度）
-  7. 所有相对 Markdown 链接可达；行内锚点按 GitHub 算法可解析
-  8. 所有路径使用正斜杠；正文中不得出现反斜杠路径
-  9. 仓库内不得出现 CRLF 行尾
- 10. scripts/ 下所有 .py 可编译
- 11. 版本一致性：`name` 中的 `主-次` 与 `metadata.version` 的 `主.次` 对得上
- 12. 发布前占位值清点：清点仍可能残留的**模板占位符**
+ 7. 所有相对 Markdown 链接可达；行内锚点按 GitHub 算法可解析
+ 8. 所有路径使用正斜杠；正文中不得出现反斜杠路径
+ 9. 仓库内不得出现 CRLF 行尾
+10. scripts/ 下所有 .py 可编译
+11. 版本一致性：`name` 中的 `主-次` 与 `metadata.version` 的 `主.次` 对得上
+12. 发布前占位值清点：清点仍可能残留的**模板占位符**
      （常量见下方 `PLACEHOLDER_TOKENS`，即姓名字段的三种尖括号写法）
      与 `example.com` 一类占位域名
      —— 只报警不失败，用于发布前自查
+13. `## 目录` 与正文二级标题**同集同序**（漏收录、顺序错乱都算失败）
+14. 指向「需在仓库设置中开启」的 GitHub 功能（Discussions / Wiki / Packages）
+     的链接 —— 只报警不失败，提醒人工确认；**刻意不做网络探测**，
+     以保证本脚本始终是纯离线、结果稳定的检查
 
 退出码：0 = 全部通过；1 = 存在失败项；2 = 用法错误。
 """
@@ -56,6 +60,21 @@ PLACEHOLDER_TOKENS = (
 PLACEHOLDER_SKIP_FILES = {"CHANGELOG.md"}
 
 SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+
+# 这些 GitHub 页面**只在仓库设置里显式开启后才存在**，因此链接指向它们时，
+# 校验器无法从文件内容判断它是否真的开着 —— 那是服务端状态。
+#
+# 之所以单列出来：5.8 发布后审计发现的死链正是这一类 ——
+# `.github/ISSUE_TEMPLATE/config.yml` 指向 `/discussions`，而该仓库的 Discussions
+# 并未开启，API 返回 410。而这块链接恰好出现在「新建 Issue」页面上，
+# 也就是使用者卡住时最可能点到的地方。
+#
+# 只报警、不失败：开了就没事，没开才是死链，而这件事只有人（或带权限的凭据）知道。
+SELF_LINK_OPTIN_SURFACES = {
+    "discussions": "Discussions",
+    "wiki": "Wiki",
+    "packages": "Packages",
+}
 
 
 class Report:
@@ -117,10 +136,13 @@ def github_anchor(heading):
     return s.replace(" ", "-")
 
 
-def collect_anchors(text):
-    """返回该文件中全部可用锚点（含重复标题的 -1/-2 后缀）。"""
+def iter_headings(text):
+    """按 GitHub 锚点算法逐个产出 `(级别, 锚点, 标题原文)`，保序，跳过代码块。
+
+    代码块要跳过：`references/report-template.md` 整篇正文就在栅栏里，
+    那些 `##` 是**模板内容**而不是本文档的章节，不该参与目录比对。
+    """
     seen = {}
-    anchors = set()
     in_fence = False
     for line in text.splitlines():
         if line.lstrip().startswith("```"):
@@ -133,9 +155,35 @@ def collect_anchors(text):
             continue
         base = github_anchor(m.group(2))
         n = seen.get(base, 0)
-        anchors.add(base if n == 0 else "%s-%d" % (base, n))
+        anchor = base if n == 0 else "%s-%d" % (base, n)
         seen[base] = n + 1
-    return anchors
+        yield len(m.group(1)), anchor, m.group(2).strip()
+
+
+def collect_anchors(text):
+    """返回该文件中全部可用锚点（含重复标题的 -1/-2 后缀）。"""
+    return {anchor for _, anchor, _ in iter_headings(text)}
+
+
+def toc_entry_anchors(text):
+    """`## 目录` 块里指向**本文件**的锚点，保序。
+
+    只认 `- [标题](#锚点)` 形态，因此目录里的分组小标题
+    （如 `**使用者**`）与指向其它文件的条目都不会被当成本文件的目录项。
+    """
+    out = []
+    in_toc = False
+    for line in text.splitlines():
+        if line.strip() == "## 目录":
+            in_toc = True
+            continue
+        if in_toc:
+            if line.startswith("## "):
+                break
+            m = re.match(r"^\s*[-*]\s+\[[^\]]+\]\(#([^)]+)\)", line)
+            if m:
+                out.append(m.group(1))
+    return out
 
 
 def iter_files(root):
@@ -242,6 +290,69 @@ def check_toc(rep, ref_dir):
                          % (fname, lines, TOC_MIN_LINES))
     if long_files and not missing:
         rep.ok("references/ 下 %d 个超长文件均带 `## 目录`" % long_files)
+
+
+def check_toc_sync(rep, root):
+    """`## 目录` 必须与正文二级标题**同集同序**。
+
+    这是 5.8 发布后审计发现的盲区：原有检查只验证「目录里的锚点能否解析」——
+    于是目录里**多**一条会报错，而正文有、目录**少**收录的，以及**顺序**，
+    它一概不管。结果 README 漏了「引用」一节、CONTRIBUTING 漏了「License」，
+    两个仓库门面文档都带着错发布出去了。
+
+    判据用**锚点**而不是标题的显示文字：目录里可以为了可读性加标点或后缀
+    （`references/` 里就有几个这样写的），只要锚点对得上就算数。
+    """
+    checked = 0
+    bad = 0
+    for path in sorted(iter_files(root)):
+        if not path.endswith(".md"):
+            continue
+        text = read_text(path)
+        toc = toc_entry_anchors(text)
+        if not toc:
+            continue
+        rel = os.path.relpath(path, root).replace("\\", "/")
+        heads = [a for lv, a, title in iter_headings(text)
+                 if lv == 2 and title != "目录"]
+        missing = [a for a in heads if a not in toc]
+        if missing:
+            bad += 1
+            rep.fail("%s：`## 目录` 漏收录二级标题 %s" % (rel, missing))
+            continue
+        if [a for a in toc if a in heads] != [a for a in heads if a in toc]:
+            bad += 1
+            rep.fail("%s：`## 目录` 的顺序与正文二级标题不一致" % rel)
+            continue
+        checked += 1
+    if not bad:
+        rep.ok("目录与二级标题同集同序：%d 个文件" % checked)
+
+
+def check_self_links(rep, root):
+    """自指链接若指向「需在设置中开启」的功能，提醒人工确认。
+
+    只做静态识别，**不做网络可达性探测**：本校验器要能在离线 CI 里稳定跑，
+    把可达性断言打在外网上会引入限流与抖动 —— 那正是本仓库一直在避免的
+    「流水线随机变红」。静态这一层刚好能抓住本次那个错（`/discussions`
+    在 Discussions 未开启时是 410），代价为零。
+    """
+    surfaces = "、".join(sorted(SELF_LINK_OPTIN_SURFACES.values()))
+    hits = []
+    for path in sorted(iter_files(root)):
+        if not path.endswith((".md", ".yml", ".yaml", ".json", ".cff")):
+            continue
+        rel = os.path.relpath(path, root).replace("\\", "/")
+        text = read_text(path)
+        for m in re.finditer(r"github\.com/[^/\s)\]\"']+/[^/\s)\]\"']+/([a-z-]+)",
+                             text):
+            if m.group(1) in SELF_LINK_OPTIN_SURFACES:
+                hits.append("%s: /%s" % (rel, m.group(1)))
+    if hits:
+        rep.warn("链接指向需在仓库设置中开启的功能（%s），未开启就是死链，请确认：%s"
+                 % (surfaces, hits[:6]))
+    else:
+        rep.ok("未发现指向「需在设置中开启」功能（%s）的链接" % surfaces)
 
 
 def check_links(rep, root):
@@ -410,8 +521,10 @@ def main(argv=None):
     check_skill_body(rep, body)
     check_version_consistency(rep, name, fm)
     check_toc(rep, os.path.join(root, "references"))
+    check_toc_sync(rep, root)
     check_reference_depth(rep, os.path.join(root, "references"))
     check_links(rep, root)
+    check_self_links(rep, root)
     check_line_endings(rep, root)
     check_backslash_paths(rep, root)
     check_scripts(rep, root)

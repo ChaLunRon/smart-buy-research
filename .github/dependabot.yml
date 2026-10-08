@@ -1,0 +1,44 @@
+# 依赖更新配置。
+#
+# ⚠️ **这个文件与「把 actions 钉到完整 SHA」是成对的，缺一不可。**
+#
+# 钉了 SHA 之后，工作流里的 actions/* 再也不会自己更新。如果同时没有升级机器人在跑，
+# 等于把「懒得更新」升级成「**永远不更新**」—— 比不钉还腐坏：依赖会静默停在旧版本，
+# 而 GitHub 对旧 Node 运行时的处置是先给弃用警告、再直接移除二进制（removal 之后
+# 旧 action 会在没人测过的运行时上跑）。
+#
+# 所以 5.9 起，两个工作流里的 actions 一律写成：
+#
+#     uses: <owner>/<action>@<40 位 SHA>  # v5.1.0
+#
+# dependabot 认得这个形式，提 PR 时会把 SHA 与行尾注释里的版本号**一起**改掉。
+
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: ci
+    groups:
+      # 按更新类型分组：否则一次 Node 运行时升级会散成三四个 PR，没人看得过来。
+      actions-minor-patch:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+      # 大版本单独一组，**不自动合并**：本仓库的规则是「升到刚好消除警告的最小大版本」，
+      # 大版本跳跃需要人工判断（checkout v6 改了凭据持久化方式、v7 限制了对 fork PR 的检出；
+      # setup-python v7 移除了 pip-install 输入）。混进 minor/patch 组会被一起合掉。
+      actions-major:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["major"]
+
+    # 安全更新**不列入任何 group**：按 dependabot 的语义，group 只作用于版本更新，
+    # 安全更新仍各自单独提 PR —— 这正是想要的，别让它被日常版本更新淹没。

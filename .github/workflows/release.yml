@@ -10,13 +10,13 @@ name: release
 # 注意口径：能承诺的是「逐文件相同」（Git 对象指纹一致），**不是「逐字节相同」** ——
 # zip 的条目时间戳取构建机器的本机时间，同一 tag 在 UTC 与 GMT+8 打出的容器字节会差
 # 条目数 × 2 处（local header 与 central directory 各一处）。所以下面的断言打在内容层。
-# 仓库内 42 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
+# 仓库内 44 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
 # 所以 `git archive` 不会改动行尾。
 #
 # zip 的顶层目录名取该 tag 的 `SKILL.md` 里的 `name`。这点是关键：
 # GitHub 为 tag 自动生成的 "Source code" 归档，顶层目录是 `{仓库名}-{tag}`（**点号**，
-# 如 `smart-buy-research-5.8`），而技能规范要求 `name` 与目录名一致且**点号非法**
-# （必须写成 `smart-buy-research-5-8`）。直接下载自动归档再改名容易漏，
+# 如 `smart-buy-research-5.9`），而技能规范要求 `name` 与目录名一致且**点号非法**
+# （必须写成 `smart-buy-research-5-9`）。直接下载自动归档再改名容易漏，
 # 所以这里附一个解压即可用的 zip。
 
 on:
@@ -42,12 +42,16 @@ jobs:
     name: 建 Release 并附 zip
     runs-on: ubuntu-22.04
     steps:
-      # 钉 v5 而不是最新的 v7：v5 是**第一个**以 Node 24 为默认的大版本，已经足够
-      # 消除 Node 20 弃用警告；而 v6 把凭据从 `.git/config` 改存到单独文件，
-      # 本工作流下面要执行 `git fetch origin main`，依赖的正是检出动作持久化的凭据，
-      # 在无法本地复现 CI 的前提下不值得为「更新」冒这个行为变化。
+      # 钉到**完整 SHA**（= v5.1.0），理由有两层：
+      #   1) 大版本钉 v5 而不是最新的 v7：v5 是**第一个**以 Node 24 为默认的大版本，
+      #      已经足够消除 Node 20 弃用警告；而 v6 把凭据从 `.git/config` 改存到单独文件，
+      #      本工作流下面要执行 `git fetch origin main`，依赖的正是检出动作持久化的凭据，
+      #      在无法本地复现 CI 的前提下不值得为「更新」冒这个行为变化。
+      #   2) SHA 钉死之后**不会自己更新**，所以 `.github/dependabot.yml` 必须同时存在 ——
+      #      它认得 SHA 形式，提 PR 时会把 SHA 与下面这行注释里的版本号一起改掉。
+      #      只钉 SHA 而不配 dependabot，等于把「懒得更新」升级成「永远不更新」。
       # v7 另有「对 fork PR 限制检出」的变更，本工作流不涉及。
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
         with:
           # 回填要能枚举全部 tag；同时要能读到 main 上的 CHANGELOG
           fetch-depth: 0

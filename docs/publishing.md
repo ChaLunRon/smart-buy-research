@@ -42,7 +42,7 @@ ls SKILL.md       # 必须存在
 > 另外，若要支持 Claude Code 的 `/plugin marketplace add`，仓库根需要有
 > `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`（本仓库已随附）。
 
-本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.8，
+本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.9，
 历史版本各自打了 tag，`git log --oneline` 就能看到完整演进。
 
 ## 二、发布前必做
@@ -73,16 +73,28 @@ cd <仓库根，即含 SKILL.md 的那一层>
 
 git init -b main
 git add .
-git commit -m "Initial public release: 5.8"
+git commit -m "Initial public release: 5.9"
 git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main
 ```
 
-推 tag（把已归档的历史版本一起推上去）：
+推 tag —— **先推分支，再逐个推精确 ref**：
 
 ```bash
-git push origin --tags
+git push -u origin main     # 1) 分支
+git push origin 5.9         # 2) 本轮新增的那个 tag，点名推
+
+# 首次发布要把历史 tag 一起补齐时，先 `git tag` 核对清单，然后逐个推：
+#   git push origin 1.0
+#   git push origin 2.0
+#   …（每个都点名）
 ```
+
+> ⚠️ **不要用 `git push --tags`。**
+> 它会把本地**全部** tag 一并推上去 —— 包括你临时打的试验性 tag；
+> 而本项目的纪律是**只推精确 ref**：多做的动作就多一分意外。
+> 这条口径与本仓库每一轮的推送记录（`PUSH-*.md`）一致，
+> 之前这几行文档教的是 `--tags`，**属自家文档与自家纪律打架**，5.9 已更正。
 
 ## 四、仓库设置建议
 
@@ -91,25 +103,28 @@ git push origin --tags
 | **Private vulnerability reporting** | 开启 | `SECURITY.md` 与 Issue 模板都指向它 |
 | **Topics** | 已设 8 个：`agent-skill` `agent-skills` `ai-agent` `claude-code` `claude-code-plugin` `product-research` `purchase-decision` `shopping-assistant` | 让技能可被发现 |
 | **Description** | 「全网口碑调研与购买决策 · Agent Skill」 | 一句话讲清楚 |
+| **Homepage** | 填仓库地址（或将来的文档站） | 侧栏会显示成可点链接；**留空就一直空着**，不影响功能但显得没收拾 |
+| **Discussions** | **要么真的开启，要么就别在 Issue 模板里链它** | 未开启时 `/discussions` 返回 **410** —— 而 Issue 模板的 contact link 恰好显示在「新建 Issue」页面上。5.8 这里就是一条死链，5.9 已改指仓库内文档 |
 | **Branch protection**（main） | 要求 CI 通过 | 本仓库的 CI 是纯离线检查，稳定可依赖 |
 | **Releases** | 已启用**自动发布**：推 tag 即建 Release 并附 zip | 见下一节 |
 | **Packages** | **保持为空**（有意为之） | 本项目无包管理器载体，理由见第五节 |
+| **Dependabot** | `github-actions` 生态、每周一次、按更新类型分组 | **与「把 actions 钉到 SHA」成对存在** —— 只钉 SHA 而不配它，等于把「懒得更新」升级成「永远不更新」 |
 
 ## 五、历史版本怎么放
 
 **用 tag 表达历史，用 Release 提供下载。** 两者都做，各司其职：
 
 ```bash
-git tag 5.8                    # 轻量 tag，与仓库既有的 14 个 tag 同类
-git push origin 5.8
+git tag 5.9                    # 轻量 tag，与仓库既有的 15 个 tag 同类
+git push origin 5.9
 ```
 
-> **口径**：本仓库既有的 14 个 tag **全部是轻量 tag**（`git for-each-ref --format='%(objecttype)' refs/tags/`
+> **口径**：本仓库既有的 15 个 tag **全部是轻量 tag**（`git for-each-ref --format='%(objecttype)' refs/tags/`
 > 输出全是 `commit`，没有 `tag` 对象）。本文件此前写的 `git tag -a` 会打出**注解 tag** ——
 > 与既有 tag 不是同一种对象类型。**要么继续用轻量 tag（推荐，现状如此），要么整体重打**；
 > 只对新版本用注解 tag，会让两种对象类型混在同一个仓库里。
 
-- **tag** —— 读者 `git checkout 5.8` 就能拿到完整快照，仓库体积不膨胀。
+- **tag** —— 读者 `git checkout 5.9` 就能拿到完整快照，仓库体积不膨胀。
   这是**版本历史的权威表达**，也是 `git log` / `git diff` 能看出演进的前提。
 - **Release** —— 给「不想 clone 的人」一键下载。**本仓库已自动化**，见下。
 
@@ -119,7 +134,7 @@ git push origin 5.8
 
 推一个形如 `主.次` 的 tag，工作流会自动：
 
-1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-5-8`）；
+1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-5-9`）；
 2. 用 `git archive --prefix=<name>/ <tag>` **从 tag 现算** zip；
 3. 自检这个 zip：顶层目录唯一且等于 `name`、含 `SKILL.md`、不含 `.git` 与缓存；
 4. 建 Release、把 zip 作为附件上传，Release notes 取 `CHANGELOG.md` 的对应小节。
@@ -139,6 +154,28 @@ git push origin 5.8
 > 本次修正无关的行为变化（例如 `actions/checkout` 的 v6 改了凭据持久化方式，而 `release.yml`
 > 正依赖它持久化的凭据去执行 `git fetch origin main`）。
 
+### actions 引用：钉 SHA 与 dependabot 必须**成对**落地
+
+5.9 起，工作流里的 `actions/*` 一律钉到**完整 40 位 SHA**，并保留可读的版本注释：
+
+```yaml
+- uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09      # v5.1.0
+- uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+```
+
+**为什么不能只钉 SHA**：钉死之后它就**再也不会自己更新**，等于把「依赖更新」
+从「懒得管」升级成「**永远不管**」，反而更腐坏。所以同一次提交里必须有
+`.github/dependabot.yml`（`package-ecosystem: github-actions`）：
+它认得 SHA 形式，会在提 PR 时把 SHA **和注释一起**改掉。
+
+本仓库的配置取两个取舍：
+
+- **按更新类型分组**（`groups`），否则一次 Node 运行时升级会变成三四个 PR，没人看得过来；
+- **安全更新单独一组**，不让它被淹没在常规版本更新里。
+
+**判断现状的正确依据**是**最新一次运行的注解**，不是历史运行 ——
+GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**（详见第六节）。
+
 **回填历史版本**：手动触发该工作流并填 `backfill=all`，它会为每个 tag 补建 Release
 （已存在的自动跳过，可重复触发）。Release notes 一律从 `main` 的 CHANGELOG 取，
 因为 `tag 1.0 ~ 4.1` 当时还没有 `CHANGELOG.md`，`5.3` / `5.4` 的副本又被截断过；
@@ -152,8 +189,8 @@ git push origin 5.8
 | `5.1` 起 | 与 tag 同名的 `## 5.x` |
 
 > ⚠️ **别拿 GitHub 为 tag 自动生成的 "Source code" 归档当安装包。**
-> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-5.8`（**点号**）；
-> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-5-8`。
+> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-5.9`（**点号**）；
+> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-5-9`。
 > 下载 Release 里那个 zip 才是开箱即用的。
 
 ### 为什么 Packages 是空的
@@ -179,22 +216,23 @@ git push origin 5.8
 |---|---|
 | 把归档层（含多个版本文件夹）整个推上去 | GitHub 出现多份重复副本；`SKILL.md` 不在仓库根，技能无法被加载 |
 | 改了 `SKILL.md` 的 `name` 却没改目录名 | 规范校验不通过；安装后无法被识别 |
-| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-8` |
-| `name` 里写点号（`5.8`） | 规范只允许小写字母/数字/连字符，必须写 `5-8` |
-| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-5.8`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
+| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-9` |
+| `name` 里写点号（`5.9`） | 规范只允许小写字母/数字/连字符，必须写 `5-9` |
+| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-5.9`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
 | 把中文署名直接当 GitHub 登录名用 | GitHub 登录名只允许 ASCII，`https://github.com/<中文名>/...` **打不开**、徽章裂图。正文署名可以留中文，但**凡是填进 URL 的 owner 必须是 ASCII**；`validate_skill.py` 第 12 项会清点残留的模板占位符 |
 | 每个版本建一个新仓库 | 版本历史断成互不相干的仓库，无法 diff、无法追溯 |
 | 忘了推 tag | 本地有历史，GitHub 上只有最新一版 |
-| 把 `actions/*` 钉在旧大版本 | 每次运行都带一条 `Node.js 20 is deprecated` 警告；**警告级所以极易长期忽略**，而 runner 自 **2026-06-02** 起默认 Node 24、**2026-09-16** 起移除 Node 20 二进制，届时会变成失败。本仓库用 `actions/checkout@v5` + `actions/setup-python@v6` |
+| 把 `actions/*` 钉在旧大版本 | 每次运行都带一条 `Node.js 20 is deprecated` 警告；**警告级所以极易长期忽略**，而 runner 自 **2026-06-02** 起默认 Node 24、**2026-09-16** 起移除 Node 20 二进制，届时会变成失败。本仓库现用 `actions/checkout` v5.1.0 与 `actions/setup-python` v6.3.0（钉在完整 SHA 上，见第五节） |
+| **只钉 SHA、不加 `dependabot.yml`** | 钉了 SHA 就永不再自动更新，等于把「懒得管」升级成「**永远不管**」。这两件事必须**成对**落地，见第五节 |
 | 改完 CI 后拿**历史运行**判断现状 | GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**。判断现状只看**最新一次运行的结论**，并确认它的 `head_sha` 在当前 `main` 的祖先链上（被 `--amend` 重写掉的提交会变成孤儿对象，记录却还挂在 Actions 列表里；旧运行上的注解也不会因修好而消失） |
 
 ## 七、版本命名规则速查
 
 | 场合 | 写法 | 说明 |
 |---|---|---|
-| 文档正文 / `metadata.version` | `5.8` | 标准两级写法 |
-| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-8` | 规范禁止点号，必须用连字符 |
-| git tag | `5.8` 或 `v5.8` | 与 `metadata.version` 对齐最省事 |
+| 文档正文 / `metadata.version` | `5.9` | 标准两级写法 |
+| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-9` | 规范禁止点号，必须用连字符 |
+| git tag | `5.9` 或 `v5.9` | 与 `metadata.version` 对齐最省事 |
 
 **三条命名必须完全一致**（zip 名 / 目录名 / `name` 字段），否则同时安装多个版本会触发名冲突。
 详见 [CONTRIBUTING.md](../CONTRIBUTING.md)。
