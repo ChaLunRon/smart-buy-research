@@ -3,14 +3,18 @@
 """
 validate_skill.py 的单元测试。
 
-重点覆盖 5.9 新增的两条检查 —— 它们是「发布后审计发现的盲区」的防复发装置：
+重点覆盖 5.9 新增的两条检查（5.10 又扩了第 14 项的覆盖面）—— 它们是
+「发布后审计发现的盲区」的防复发装置：
 
   13. `## 目录` 与正文二级标题**同集同序**
       原检查只验证「目录里的锚点能否解析」：目录里**多**一条会报错，
       而正文有、目录**少**收录的、以及**顺序**，它一概不管 ——
       README 漏了「引用」、CONTRIBUTING 漏了「License」，都是这么漏出去的。
-  14. 自指链接指向「需在仓库设置中开启」的功能（Discussions / Wiki / Packages）
+  14. 自指链接指向「需在仓库设置中开启」的功能
+      （Discussions / Wiki / Packages / Private vulnerability reporting）
       未开启就是死链，但只以 WARN 呈现、不影响退出码。
+      5.10 起：匹配范围放宽到整段路径（才认得出 `/security/advisories`），
+      且**已人工实测确认开启**的（`SELF_LINK_OPTIN_VERIFIED`）只列出、不报警告。
 
 说明：夹具全部搭在**临时目录**里，不引用本仓库当前内容的行号或措辞 ——
 否则改一次 README 就会连带弄红测试，那是夹具设计错了，不是内容错了。
@@ -218,6 +222,31 @@ class SelfLinkOptinTest(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn("Wiki", out)
         self.assertIn("Packages", out)
+
+    def test_指向security_advisories记为已核实而非警告(self):
+        # 5.10 新增：两段式开关路径。已人工实测确认开启 ⇒ 列出但不报警告。
+        self.fx.build(
+            "报漏洞见 https://github.com/acme/acme/security/advisories/new 。\n")
+        rc, out = self.fx.run()
+        self.assertEqual(rc, 0, out)
+        self.assertIn("Private vulnerability reporting", out)
+        self.assertIn("已核实", out)
+        self.assertNotIn("WARN", out)
+
+    def test_两段式路径更深的层级也能命中(self):
+        self.fx.build(
+            "https://github.com/acme/acme/security/advisories/123/edit\n")
+        rc, out = self.fx.run()
+        self.assertEqual(rc, 0, out)
+        self.assertIn("已核实", out)
+
+    def test_单独的security路径不算命中(self):
+        # 仓库的 Security 标签页本身**不需要**任何开关，不能把 `/security` 误判成 PVR。
+        self.fx.build("https://github.com/acme/acme/security\n")
+        rc, out = self.fx.run()
+        self.assertEqual(rc, 0, out)
+        self.assertIn("未发现指向", out)
+        self.assertNotIn("已核实", out)
 
     def test_常规仓库页面不报警(self):
         self.fx.build(

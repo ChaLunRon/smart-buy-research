@@ -15,8 +15,8 @@ name: release
 #
 # zip 的顶层目录名取该 tag 的 `SKILL.md` 里的 `name`。这点是关键：
 # GitHub 为 tag 自动生成的 "Source code" 归档，顶层目录是 `{仓库名}-{tag}`（**点号**，
-# 如 `smart-buy-research-5.9`），而技能规范要求 `name` 与目录名一致且**点号非法**
-# （必须写成 `smart-buy-research-5-9`）。直接下载自动归档再改名容易漏，
+# 如 `smart-buy-research-5.10`），而技能规范要求 `name` 与目录名一致且**点号非法**
+# （必须写成 `smart-buy-research-5-10`）。直接下载自动归档再改名容易漏，
 # 所以这里附一个解压即可用的 zip。
 
 on:
@@ -42,15 +42,17 @@ jobs:
     name: 建 Release 并附 zip
     runs-on: ubuntu-22.04
     steps:
-      # 钉到**完整 SHA**（= v5.1.0），理由有两层：
-      #   1) 大版本钉 v5 而不是最新的 v7：v5 是**第一个**以 Node 24 为默认的大版本，
-      #      已经足够消除 Node 20 弃用警告；而 v6 把凭据从 `.git/config` 改存到单独文件，
-      #      本工作流下面要执行 `git fetch origin main`，依赖的正是检出动作持久化的凭据，
-      #      在无法本地复现 CI 的前提下不值得为「更新」冒这个行为变化。
+      # 钉到**完整 SHA**（= v7.0.1），维护方式有两层：
+      #   1) 本工作流下一步要执行 `git fetch origin main`，依赖的正是检出动作
+      #      持久化的凭据。v6 把凭据从 `.git/config` 改存到 `$RUNNER_TEMP` 下的单独文件，
+      #      上游 README 对此明写 **No workflow changes required —
+      #      `git fetch`, `git push`, etc. continue to work automatically**；
+      #      2026-10-09 又用一个非版本号 tag 把整条发布链路跑通实测过（发布记录 §7.3）。
+      #      v7 的变更是「默认拒绝在 `pull_request_target` / `workflow_run` 下检出 fork
+      #      代码」（本工作流不用这两个触发器）、迁 ESM、依赖更新 —— 均不影响本路径。
       #   2) SHA 钉死之后**不会自己更新**，所以 `.github/dependabot.yml` 必须同时存在 ——
       #      它认得 SHA 形式，提 PR 时会把 SHA 与下面这行注释里的版本号一起改掉。
       #      只钉 SHA 而不配 dependabot，等于把「懒得更新」升级成「永远不更新」。
-      # v7 另有「对 fork PR 限制检出」的变更，本工作流不涉及。
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # 回填要能枚举全部 tag；同时要能读到 main 上的 CHANGELOG

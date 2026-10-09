@@ -1,12 +1,12 @@
 # Smart Buy Research · 全网口碑调研与购买决策
 
 <p>
-  <img alt="version" src="https://img.shields.io/badge/version-5.9-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-5.10-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-yellow">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen">
   <img alt="agent skills" src="https://img.shields.io/badge/Agent%20Skills-compatible-purple">
-  <img alt="tests" src="https://img.shields.io/badge/tests-120%20passing-brightgreen">
+  <img alt="tests" src="https://img.shields.io/badge/tests-123%20passing-brightgreen">
   <img alt="ci" src="https://github.com/ChaLunRon/smart-buy-research/actions/workflows/validate.yml/badge.svg">
 </p>
 
@@ -76,19 +76,19 @@
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-9
+  ~/.workbuddy/skills/smart-buy-research-5-10
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-9"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-10"
 ```
 
-> - **目录名必须与 `SKILL.md` 里的 `name` 完全一致**（`smart-buy-research-5-9`），否则校验不通过。
->   `name` 里**不能出现点号**，所以版本 `5.9` 写作 `5-9`。
+> - **目录名必须与 `SKILL.md` 里的 `name` 完全一致**（`smart-buy-research-5-10`），否则校验不通过。
+>   `name` 里**不能出现点号**，所以版本 `5.10` 写作 `5-10`。
 > - **不想用 git？** 到 [Releases](https://github.com/ChaLunRon/smart-buy-research/releases) 下载
->   `smart-buy-research-5-9.zip`，解压后整个目录放进技能目录即可（包里顶层目录名已正确，**不要改名**）。
+>   `smart-buy-research-5-10.zip`，解压后整个目录放进技能目录即可（包里顶层目录名已正确，**不要改名**）。
 > - **Fork 到自己账号下**要同步改署名、`metadata.author`、`CITATION.cff`、`LICENSE`、
 >   所有 `github.com/<owner>/` 里的 owner 与邮箱；`tools/validate_skill.py` 第 12 项会清点残留占位符。
 
@@ -192,7 +192,7 @@ python scripts/fetch_bilibili.py comments BV1GJ411x7h7 --pages 2 --mode 2   # mo
 ## 项目结构
 
 遵循 Agent Skills 的**三层披露**：只把每次都用得到的放进 `SKILL.md`，其余按需加载 ——
-`references/`（8 个文件，方法论）· `scripts/`（3 个脚本）· `tests/`（4 个文件，120 个用例）·
+`references/`（8 个文件，方法论）· `scripts/`（3 个脚本）· `tests/`（4 个文件，123 个用例）·
 `tools/validate_skill.py`（结构自检）· `docs/`（贡献者文档）· `.github/`（模板 + 工作流 + 依赖更新）。
 
 **完整目录树、每个文件的职责、「新内容该放哪一层」的决策树**：
@@ -202,7 +202,7 @@ python scripts/fetch_bilibili.py comments BV1GJ411x7h7 --pages 2 --mode 2   # mo
 
 ```bash
 python tools/validate_skill.py .              # 结构规范自检（14 项）
-python -m unittest discover -s tests -v       # 120 个单元测试
+python -m unittest discover -s tests -v       # 123 个单元测试
 ```
 
 任一条不过即以退出码 1 结束，可直接当 CI 用；完整检查清单见
@@ -215,24 +215,24 @@ python -m unittest discover -s tests -v       # 120 个单元测试
 
 ## 版本历史
 
-工作版本 **5.9**；历史用 **git tag** 表达，不是并列的文件夹 —— 这样 `git log` / `git diff`
+工作版本 **5.10**；历史用 **git tag** 表达，不是并列的文件夹 —— 这样 `git log` / `git diff`
 才能看出每一步改了什么。
 
 | tag | 主题 |
 |---|---|
-| `5.9` | **当前版本**：对外文档与门面修正 |
+| `5.10` | **当前版本**：安全入口修正 + 归档口径统一 |
+| `5.9` | 对外文档与门面修正 |
 | `5.8` | MediaCrawler 集成加固 |
-| `5.7` | CI 依赖跟到 Node 24 + 三处表述修正 |
 
-> 其余 13 个 tag（`1.0` … `5.6`）与每一次的完整理由见 [CHANGELOG.md](./CHANGELOG.md)。
+> 其余 14 个 tag（`1.0` … `5.7`）与每一次的完整理由见 [CHANGELOG.md](./CHANGELOG.md)。
 > 每个 tag 都有对应的 **[Release](https://github.com/ChaLunRon/smart-buy-research/releases)**，
 > 附一个由该 tag **现算**的「解压即可用」zip。**安装请用它**，不要用 GitHub 为 tag 自动生成的
-> "Source code" 归档（顶层目录是 `smart-buy-research-5.9`，**点号**，与 `name` 的连字符写法不一致）。
+> "Source code" 归档（顶层目录是 `smart-buy-research-5.10`，**点号**，与 `name` 的连字符写法不一致）。
 
 ## 发布到 GitHub
 
 **仓库根 = 含 `SKILL.md` 的那一层**，不要把多个版本文件夹并排推上去。先自检，再
-`git push -u origin main`，最后**逐个推精确 tag**（`git push origin 5.9`）——
+`git push -u origin main`，最后**逐个推精确 tag**（`git push origin 5.10`）——
 ⚠️ **不要用 `git push --tags`**：它会把本地**全部** tag 一并推上去（包括临时打的），
 而本项目的纪律是**只推精确 ref**：多做的动作就多一分意外。
 

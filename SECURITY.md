@@ -9,8 +9,15 @@
 
 请**不要**开公开 Issue 报告安全问题。改用以下方式：
 
-1. 通过 GitHub 的 [Private vulnerability reporting](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability) 提交，或
-2. 私下联系维护者
+1. **Private vulnerability reporting**（本仓库**已开启**，2026-10-09 实测）——
+   入口：仓库的 **Security** 标签 → **Advisories** → **Report a vulnerability**，
+   或直接打开 <https://github.com/ChaLunRon/smart-buy-research/security/advisories/new>。
+   这条通道是**私密**的：只有维护者可见，可以在里面贴复现步骤与细节，
+   也可以开临时私有 fork 一起改。功能说明见
+   [GitHub 文档](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability)。
+2. **若上面那条走不通**（例如你用的是本仓库的 **fork**、该功能未开启，或你没有 GitHub 账号）——
+   请改为**私下联系维护者**（GitHub 主页上的联系方式）。**同样不要发公开 Issue**：
+   公开 Issue 会把细节暴露给所有人，包括仍在受影响版本上的用户。
 
 请在报告里尽量包含：
 

@@ -42,7 +42,7 @@ Agent Skills 的核心设计是**分层加载**：不会一次性把所有内容
 ## 仓库目录树
 
 ```
-smart-buy-research-5-9/
+smart-buy-research-5-10/
 ├── .claude-plugin/                 # Claude Code 插件清单
 │   ├── marketplace.json            # 市场清单（name / owner / plugins）
 │   └── plugin.json                 # 插件清单（只需 name）
@@ -84,7 +84,7 @@ smart-buy-research-5-9/
 ├── SECURITY.md                     # 安全政策（含提示注入风险、撤回门槛）
 ├── CODE_OF_CONDUCT.md              # 贡献者公约（含本项目特有红线）
 ├── AGENTS.md                       # 给 AI 编码代理的仓库说明
-├── CHANGELOG.md                    # v1 → 5.9 版本演进
+├── CHANGELOG.md                    # v1 → 5.10 版本演进
 ├── CITATION.cff                    # 引用元数据
 ├── THIRD_PARTY_NOTICES.md          # 第三方声明（本项目无第三方代码依赖）
 ├── LICENSE                         # MIT
@@ -115,7 +115,7 @@ smart-buy-research-5-9/
 
 ```yaml
 ---
-name: smart-buy-research-5-9
+name: smart-buy-research-5-10
 description: ...
 ---
 ```
@@ -129,7 +129,7 @@ description: ...
 | `metadata` | `author` / `version` / `homepage` |
 
 **约束**：`name` 只允许小写字母、数字、连字符，**点号非法**，
-且**必须与目录名完全一致**。所以版本 `5.9` 写作 `5-9`。
+且**必须与目录名完全一致**。所以版本 `5.10` 写作 `5-10`。
 
 ## 加新内容的决策树
 
@@ -166,6 +166,12 @@ python tools/validate_skill.py . --quiet      # 只看问题与警告
 > 两个门面文档带着错发布）；而**外部链接一个都不查**，于是 Issue 模板里指向
 > 未开启的 Discussions 的死链也没被拦下。第 14 项**刻意不做网络探测**——
 > 校验器要保持纯离线、结果稳定，把可达性断言打在外网上会带来随机变红。
+>
+> **5.10 又补了第 14 项的一个缺口**：它原先只匹配「一段路径」，认不出
+> `/security/advisories`（Private vulnerability reporting）这种两段式入口 ——
+> 而 5.9 上线后实测发现该功能未开启时入口同样走不通，与 `/discussions` 是同一类缺陷。
+> 同时引入 `SELF_LINK_OPTIN_VERIFIED`：**已由人实测确认开启**的开关不再报警告，
+> 只列出来提醒别关掉。离线校验器看不到服务端状态，「已核实」不能由它自己断言。
 
 **官方校验器**（若本地有 `skill-creator` 技能）可再跑一遍，两边不冲突：
 

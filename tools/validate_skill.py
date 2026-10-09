@@ -70,10 +70,22 @@ SKIP_DIRS = {".git", "__pycache__", "node_modules", ".venv", "venv"}
 # 也就是使用者卡住时最可能点到的地方。
 #
 # 只报警、不失败：开了就没事，没开才是死链，而这件事只有人（或带权限的凭据）知道。
+#
+# 键是 `owner/repo/` 之后的**路径前缀**（可含 `/`）—— 5.10 起支持两段式路径，
+# 因为 5.10 实测发现 `/security/advisories`（Private vulnerability reporting）
+# 与 `/discussions` 是同一类缺陷：该功能未开启时，这个入口一样走不通。
 SELF_LINK_OPTIN_SURFACES = {
     "discussions": "Discussions",
     "wiki": "Wiki",
     "packages": "Packages",
+    "security/advisories": "Private vulnerability reporting",
+}
+
+# 上表中**已实测确认在仓库设置里开着**的开关（值为确认日期）。
+# 指向它们的链接不再报警告，但仍会被列出来 —— 离线校验器看不到服务端状态，
+# 所以「已核实」只能由人确认一次并记在这里；列出来是为了提醒别把它关掉，一关就是死链。
+SELF_LINK_OPTIN_VERIFIED = {
+    "security/advisories": "2026-10-09",
 }
 
 
@@ -334,25 +346,44 @@ def check_self_links(rep, root):
 
     只做静态识别，**不做网络可达性探测**：本校验器要能在离线 CI 里稳定跑，
     把可达性断言打在外网上会引入限流与抖动 —— 那正是本仓库一直在避免的
-    「流水线随机变红」。静态这一层刚好能抓住本次那个错（`/discussions`
+    「流水线随机变红」。静态这一层刚好能抓住 5.8 那个错（`/discussions`
     在 Discussions 未开启时是 410），代价为零。
+
+    5.10 扩了两点：
+
+    * 匹配范围由「一段路径」放宽到「整段路径」，这样才认得
+      `/security/advisories` —— 5.9 上线后实测发现 Private vulnerability
+      reporting 未开启时该入口同样走不通，与 `/discussions` 是同一类缺陷；
+    * 新增 `SELF_LINK_OPTIN_VERIFIED`：**已由人实测确认开着**的开关不再报
+      警告，但仍会列出（提醒别把它关掉）。离线校验器看不到服务端状态，
+      「已核实」只能记录一次，不能由校验器自己断言。
     """
     surfaces = "、".join(sorted(SELF_LINK_OPTIN_SURFACES.values()))
-    hits = []
+    hits, verified = [], []
     for path in sorted(iter_files(root)):
         if not path.endswith((".md", ".yml", ".yaml", ".json", ".cff")):
             continue
         rel = os.path.relpath(path, root).replace("\\", "/")
         text = read_text(path)
-        for m in re.finditer(r"github\.com/[^/\s)\]\"']+/[^/\s)\]\"']+/([a-z-]+)",
+        for m in re.finditer(r"github\.com/[^/\s)\]\"']+/[^/\s)\]\"']+/([a-z0-9/_-]+)",
                              text):
-            if m.group(1) in SELF_LINK_OPTIN_SURFACES:
-                hits.append("%s: /%s" % (rel, m.group(1)))
+            tail = m.group(1).rstrip("/")
+            for key, label in SELF_LINK_OPTIN_SURFACES.items():
+                if tail == key or tail.startswith(key + "/"):
+                    if key in SELF_LINK_OPTIN_VERIFIED:
+                        verified.append("%s: /%s（%s，%s 实测）"
+                                        % (rel, key, label,
+                                           SELF_LINK_OPTIN_VERIFIED[key]))
+                    else:
+                        hits.append("%s: /%s（%s）" % (rel, key, label))
+                    break
     if hits:
         rep.warn("链接指向需在仓库设置中开启的功能（%s），未开启就是死链，请确认：%s"
                  % (surfaces, hits[:6]))
     else:
-        rep.ok("未发现指向「需在设置中开启」功能（%s）的链接" % surfaces)
+        rep.ok("未发现指向「需在设置中开启」功能（%s）的未核实链接" % surfaces)
+    if verified:
+        rep.ok("已核实开启的开关链接 %d 处（%s）" % (len(verified), verified[:6]))
 
 
 def check_links(rep, root):

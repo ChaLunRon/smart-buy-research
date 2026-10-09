@@ -9,7 +9,7 @@
 #
 # 所以 5.9 起，两个工作流里的 actions 一律写成：
 #
-#     uses: <owner>/<action>@<40 位 SHA>  # v5.1.0
+#     uses: <owner>/<action>@<40 位 SHA>  # v7.0.1
 #
 # dependabot 认得这个形式，提 PR 时会把 SHA 与行尾注释里的版本号**一起**改掉。
 
@@ -32,9 +32,11 @@ updates:
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
-      # 大版本单独一组，**不自动合并**：本仓库的规则是「升到刚好消除警告的最小大版本」，
-      # 大版本跳跃需要人工判断（checkout v6 改了凭据持久化方式、v7 限制了对 fork PR 的检出；
-      # setup-python v7 移除了 pip-install 输入）。混进 minor/patch 组会被一起合掉。
+      # 大版本单独一组，**不自动合并**：大版本跳跃有没有触到本仓库依赖的行为，
+      # 只有人读一遍 release notes 才知道。依据（5.10 定稿）：两个工作流都依赖
+      # 检出动作持久化的凭据，而 checkout v6 把凭据改存到 `$RUNNER_TEMP` 下的单独文件、
+      # v7 又改了 fork PR 的检出默认；setup-python v7 移除了 `pip-install` 输入。
+      # 这些都需要人工判断，混进 minor/patch 组会被一起合掉。
       actions-major:
         applies-to: version-updates
         patterns: ["*"]
