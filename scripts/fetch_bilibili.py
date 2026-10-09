@@ -128,8 +128,10 @@ def sign(params, img_key, sub_key):
 def cmd_info(bvid):
     d = _get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid)
     if d.get("code") != 0:
-        print("!! 接口返回 code=%s msg=%s" % (d.get("code"), d.get("message")))
-        return
+        # 不能用 print + return：那样退出码仍是 0，调用方（Agent）会把
+        # "没取到" 误判成 "取到了"。必须抛错，让 main 返回非零。
+        raise FetchError("接口返回 code=%s msg=%s（BV 号可能不存在或已失效）"
+                         % (d.get("code"), d.get("message")))
     dd = d.get("data")
     if not isinstance(dd, dict):
         raise FetchError("接口返回 code=0 但没有 data 字段，可能被风控或接口改版")
@@ -147,8 +149,8 @@ def cmd_info(bvid):
 def cmd_comments(bvid, pages=1, mode=3):
     d = _get("https://api.bilibili.com/x/web-interface/view?bvid=" + bvid)
     if d.get("code") != 0:
-        print("!! 拿不到 aid:", d.get("message"))
-        return
+        raise FetchError("拿不到视频信息（BV 号可能不存在或已失效）：code=%s msg=%s"
+                         % (d.get("code"), d.get("message")))
     aid = (d.get("data") or {}).get("aid")
     if not aid:
         raise FetchError("拿不到视频 aid，无法查询评论：接口返回 %s"
@@ -165,12 +167,15 @@ def cmd_comments(bvid, pages=1, mode=3):
         d2 = _get(url, referer="https://www.bilibili.com/video/" + bvid)
         code = d2.get("code")
         if code != 0:
-            print("!! 第 %d 页 code=%s msg=%s" % (page + 1, code, d2.get("message")))
+            tips = []
             if code == -352:
-                print("   -352 通常是签名失效或频率过高，稍后重试")
+                tips.append("通常是签名失效或频率过高，稍后重试")
             elif code == -412:
-                print("   -412 是限流，必须放慢频率")
-            return
+                tips.append("是限流，必须放慢频率")
+            raise FetchError(
+                "第 %d 页取评论失败：code=%s msg=%s%s"
+                % (page + 1, code, d2.get("message"),
+                   ("（%s）" % "；".join(tips)) if tips else ""))
         data = d2.get("data") or {}
         replies = data.get("replies") or []
         print("\n=== 第 %d 页，%d 条 ===" % (page + 1, len(replies)))

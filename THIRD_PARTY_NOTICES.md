@@ -4,9 +4,12 @@
 
 **结论：本项目的代码不包含任何第三方代码。**
 
-`scripts/` 下的三个脚本（`price_tracker.py`、`fetch_bilibili.py`、
-`fetch_wechat_article.py`）**仅使用 Python 标准库**，没有引入任何外部依赖，
-因此不存在需要随附许可的第三方代码。
+`scripts/` 下的四个脚本（`price_tracker.py`、`fetch_bilibili.py`、
+`fetch_wechat_article.py`、`fetch_social_comments.py`）**仅使用 Python 标准库**，
+没有引入任何外部依赖，因此不存在需要随附许可的第三方代码。
+
+> `fetch_social_comments.py` 会调用用户自行安装的 `agent-browser` 驱动一个真实浏览器，
+> 但**不捆绑、不分发**该工具，也不含其任何代码。
 
 ---
 
@@ -23,7 +26,7 @@
 
 | 工具 | 用途 | 与本项目的关系 |
 |---|---|---|
-| `agent-browser` | 无头浏览器，读取需要真实渲染的受限平台（NGA、B站搜索页） | 用户自行安装；遵循其自身许可 |
+| `agent-browser` | 无头浏览器，读取需要真实渲染的受限平台（NGA、B站搜索页），以及读取评论区（`fetch_social_comments.py`） | 用户自行安装；遵循其自身许可 |
 | `MediaCrawler`（`NanmiCoder/MediaCrawler`） | 覆盖七个平台的关键词搜索 / 指定帖子 / 二级评论 / 创作者主页 | 用户自行安装；**项目自述仅限学习、禁止商用** |
 | `MediaCrawlerPro` | 上者的**付费订阅**版（断点续爬 / 多账号 + IP 代理池 / 去掉 Playwright） | **第三方付费服务**，与本项目无关 |
 | `maishou`（`aahl/skills`） | 电商跨平台比价 | 用户自行安装；依赖非官方第三方 API |

@@ -26,7 +26,7 @@
 
 1. **`SKILL.md` 正文必须 < 500 行。** 超了就下沉到 `references/`。
 2. **`name` 只能是小写字母、数字、连字符**，且**必须与目录名完全一致**。
-   **点号非法**，所以版本 `5.10` 写作 `5-10`。
+   **点号非法**，所以版本 `6.0` 写作 `6-0`。
 3. **`description` ≤ 1024 字符**，第三人称，不得含 XML 标签。
 4. **`references/` 只能有一层深度** —— 参考文件**不得再引用其它参考文件**。
    需要交叉说明时，把内容直接写进去，或用一节文字说清。
@@ -36,19 +36,21 @@
 
 ## 脚本改动规范
 
-三个脚本（`price_tracker.py`、`fetch_bilibili.py`、`fetch_wechat_article.py`）的共同要求：
+四个脚本（`price_tracker.py`、`fetch_bilibili.py`、`fetch_wechat_article.py`、
+`fetch_social_comments.py`）的共同要求：
 
 - 参数错误 → **中文提示 + 退出码 `2`**，**绝不打印 traceback**
 - 网络错误 → 明确说明失败原因与降级方向
 - 只使用 **Python 标准库**，不新增第三方依赖
 - 新增参数 → 同步更新模块 docstring 与 `README.md`
 
-自测（三项都应 `rc=0` 且无 traceback）：
+自测（四项都应 `rc=0` 且无 traceback；`fetch_social_comments.py --help` 即可）：
 
 ```bash
 python scripts/price_tracker.py --help
 python scripts/fetch_bilibili.py --help
 python scripts/fetch_wechat_article.py --help
+python scripts/fetch_social_comments.py --help
 ```
 
 ## 事实性内容规范

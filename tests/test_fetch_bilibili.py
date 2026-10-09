@@ -181,6 +181,63 @@ class TestFetchErrorSurface(unittest.TestCase):
             bb.urllib.request.urlopen = original
 
 
+class TestFailureExitContract(unittest.TestCase):
+    """失败必须以非零退出码收场。
+
+    6.0 修复的回归：这两处原来是 `print(...) + return`，退出码仍是 **0**，
+    于是调用方（Agent）按退出码判断时，会把"没取到"**误判成"取到了"** ——
+    比直接报错危险得多。下面的用例把"必须抛 FetchError"钉死。
+    """
+
+    def _patch_get(self, fake):
+        original = bb._get
+        bb._get = fake
+        return original
+
+    def test_cmd_info_raises_on_nonzero_code(self):
+        original = self._patch_get(lambda *a, **k: {"code": -400, "message": "请求错误"})
+        try:
+            with self.assertRaises(bb.FetchError) as cm:
+                bb.cmd_info("BV0000000000")
+            self.assertIn("-400", str(cm.exception))
+        finally:
+            bb._get = original
+
+    def test_cmd_comments_raises_when_view_fails(self):
+        original = self._patch_get(lambda *a, **k: {"code": -400, "message": "请求错误"})
+        try:
+            with self.assertRaises(bb.FetchError):
+                bb.cmd_comments("BV0000000000")
+        finally:
+            bb._get = original
+
+    def test_cmd_comments_raises_on_reply_page_error(self):
+        """第一跳拿到 aid，第二跳（评论页）被风控 —— 也必须抛，不能静默返回。"""
+        def fake_get(url, *a, **k):
+            if "web-interface/view" in url:
+                return {"code": 0, "data": {"aid": 123}}
+            return {"code": -352, "message": "风控校验失败"}
+
+        og, ok = bb._get, bb.get_wbi_keys
+        bb._get = fake_get
+        bb.get_wbi_keys = lambda: ("a" * 32, "b" * 32)
+        try:
+            with self.assertRaises(bb.FetchError) as cm:
+                bb.cmd_comments("BV1pa4y1X7kv")
+            self.assertIn("-352", str(cm.exception))
+        finally:
+            bb._get, bb.get_wbi_keys = og, ok
+
+    def test_main_returns_nonzero_for_invalid_bvid(self):
+        """端到端：CLI 走完一圈，退出码必须非零。"""
+        original = self._patch_get(lambda *a, **k: {"code": -400, "message": "请求错误"})
+        try:
+            rc = bb.main(["info", "BV0000000000"])
+        finally:
+            bb._get = original
+        self.assertNotEqual(rc, 0)
+
+
 class TestCliContract(unittest.TestCase):
     def test_help_exits_zero(self):
         rc, out, _ = _run(["--help"])

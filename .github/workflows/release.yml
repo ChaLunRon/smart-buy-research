@@ -10,13 +10,13 @@ name: release
 # 注意口径：能承诺的是「逐文件相同」（Git 对象指纹一致），**不是「逐字节相同」** ——
 # zip 的条目时间戳取构建机器的本机时间，同一 tag 在 UTC 与 GMT+8 打出的容器字节会差
 # 条目数 × 2 处（local header 与 central directory 各一处）。所以下面的断言打在内容层。
-# 仓库内 44 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
+# 仓库内 46 个文件全部是 LF，`.gitattributes` 也显式声明了 `eol=lf`，
 # 所以 `git archive` 不会改动行尾。
 #
 # zip 的顶层目录名取该 tag 的 `SKILL.md` 里的 `name`。这点是关键：
 # GitHub 为 tag 自动生成的 "Source code" 归档，顶层目录是 `{仓库名}-{tag}`（**点号**，
-# 如 `smart-buy-research-5.10`），而技能规范要求 `name` 与目录名一致且**点号非法**
-# （必须写成 `smart-buy-research-5-10`）。直接下载自动归档再改名容易漏，
+# 如 `smart-buy-research-6.0`），而技能规范要求 `name` 与目录名一致且**点号非法**
+# （必须写成 `smart-buy-research-6-0`）。直接下载自动归档再改名容易漏，
 # 所以这里附一个解压即可用的 zip。
 
 on:

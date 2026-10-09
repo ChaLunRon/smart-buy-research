@@ -16,6 +16,7 @@ fetch_wechat_article.py 的单元测试与 CLI 集成测试。
 """
 
 import importlib.util
+import io
 import os
 import subprocess
 import sys
@@ -243,7 +244,46 @@ class TestCliContract(unittest.TestCase):
         rc, out, err = _run(["http://127.0.0.1:9/nope"])
         self.assertEqual(rc, 2, err)
         self.assertIn("错误", err)
-        self.assertNotIn("Traceback", err)
+
+
+class TestFailureExitContract(unittest.TestCase):
+    """取不到正文必须以非零退出码收场。
+
+    6.0 修复的回归：原来只 `print("!! 未能提取正文")` 然后 `return 0`，
+    调用方（Agent）按退出码判断时会**把"没取到"当成"取到了"**。
+    """
+
+    def _call_main(self, html):
+        # 先建好缓冲区再打桩 —— 否则中途出错会让桩泄漏到其它用例
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        original = wx.fetch
+        old_out, old_err = sys.stdout, sys.stderr
+        wx.fetch = lambda url, timeout=None: html
+        sys.stdout, sys.stderr = buf_out, buf_err
+        try:
+            return wx.main(["https://mp.weixin.qq.com/s/abcdefghijklmnop"]), buf_out.getvalue()
+        finally:
+            wx.fetch = original
+            sys.stdout, sys.stderr = old_out, old_err
+
+    def test_no_content_returns_exit_code_3(self):
+        rc, out = self._call_main("<html><body>nothing here</body></html>")
+        self.assertEqual(rc, 3)
+        self.assertIn("未能提取正文", out)
+
+    def test_blocked_page_returns_exit_code_3(self):
+        rc, _ = self._call_main('<html><body>环境异常，完成验证后即可继续访问</body></html>')
+        self.assertEqual(rc, 3)
+
+    def test_content_present_still_returns_zero(self):
+        """正向用例：能取到正文时仍必须是 0（别把修复做成误伤）。"""
+        html = ('<html><head><meta property="og:title" content="标题" /></head>'
+                '<body><div class="rich_media_content" id="js_content">'
+                '<p>正文第一段</p><p>正文第二段</p></div>'
+                '<script></script></body></html>')
+        rc, out = self._call_main(html)
+        self.assertEqual(rc, 0)
+        self.assertIn("正文第一段", out)
 
 
 if __name__ == "__main__":

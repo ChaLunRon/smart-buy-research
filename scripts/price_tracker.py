@@ -22,7 +22,8 @@
 用法：
 
    # 1. 添加一条价格记录（含国补；金额须是能核对的真实值）
-   python price_tracker.py add --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 --promo 100 --shipping 0 --note "已核实国补资格" --member-price 5690 --member-type "Plus"
+   #    ⚠️ 必须带 --out，否则只把 JSON 打到屏幕、不落盘，示例 2 会报"找不到文件"
+   python price_tracker.py add --item "XX 笔记本" --channel "京东自营" --list 6799 --coupon 200 --promo 100 --shipping 0 --note "已核实国补资格" --member-price 5690 --member-type "Plus" --out records.json
 
    # 2. 生成比价表（从 records.json 读取）
    python price_tracker.py report --input records.json

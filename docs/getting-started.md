@@ -4,10 +4,10 @@
 
 ## 通用前提
 
-技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-5-10`）。
+技能目录名**必须与 `SKILL.md` 里的 `name` 字段完全一致**（`smart-buy-research-6-0`）。
 这是 Agent Skills 规范的硬要求，改错会导致校验不通过或加载失败。
 
-注意 `name` 里**不能出现点号**，所以版本 `5.10` 写作 `5-10`。
+注意 `name` 里**不能出现点号**，所以版本 `6.0` 写作 `6-0`。
 
 ## 按运行时安装
 
@@ -18,16 +18,16 @@
 ```bash
 # macOS / Linux
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-10
+  ~/.workbuddy/skills/smart-buy-research-6-0
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-10"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-6-0"
 ```
 
-**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-5-10`。
+**项目级**（只对当前项目生效）：把仓库克隆到 `<项目>/.workbuddy/skills/smart-buy-research-6-0`。
 
 ### Claude Code
 
@@ -36,7 +36,7 @@ git clone https://github.com/ChaLunRon/smart-buy-research.git `
 
 ```bash
 /plugin marketplace add ChaLunRon/smart-buy-research
-/plugin install smart-buy-research-5-10@smart-buy-research
+/plugin install smart-buy-research-6-0@smart-buy-research
 ```
 
 **路径 B：克隆到技能目录。** 不想要插件机制的话，直接克隆即可
@@ -44,7 +44,7 @@ git clone https://github.com/ChaLunRon/smart-buy-research.git `
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.claude/skills/smart-buy-research-5-10
+  ~/.claude/skills/smart-buy-research-6-0
 ```
 
 > 仓库根同时是插件根：根目录直接放着 `SKILL.md`、没有 `skills/` 子目录，
@@ -63,8 +63,8 @@ git clone https://github.com/ChaLunRon/smart-buy-research.git \
 | 依赖 | 必需性 | 说明 |
 |---|---|---|
 | 能读网页的 Agent 运行时 | **必需** | 否则技能无法执行检索 |
-| Python 3.8+ | 用脚本时必需 | 三个脚本**纯标准库**，无需 `pip install` |
-| 无头浏览器 | **强烈建议** | 不装的话 **NGA 完全读不到，B站搜索页也读不到** |
+| Python 3.8+ | 用脚本时必需 | 四个脚本**纯标准库**，无需 `pip install` |
+| 无头浏览器 | **强烈建议**（读评论区时**必需**） | 不装的话 **NGA 完全读不到，B站搜索页也读不到**，`fetch_social_comments.py` 也无法工作 |
 
 无头浏览器：
 

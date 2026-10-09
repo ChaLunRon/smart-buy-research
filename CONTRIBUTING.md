@@ -38,7 +38,7 @@
 ## 目录结构
 
 ```
-smart-buy-research-5-10/
+smart-buy-research-6-0/
 ├── SKILL.md                 # 主入口，必须 < 500 行
 ├── references/              # 按需加载的方法论（不进默认上下文）
 ├── scripts/                 # 可执行脚本（纯标准库）
@@ -86,7 +86,7 @@ smart-buy-research-5-10/
 
 ### 4. 加固脚本
 
-`scripts/` 下的三个脚本的共同要求：
+`scripts/` 下的四个脚本的共同要求：
 
 - 参数错误 → **中文提示 + 退出码 `2`**，**绝不打印 traceback**
 - 网络错误 → 明确说明失败原因与降级方向
@@ -99,7 +99,8 @@ smart-buy-research-5-10/
 python scripts/price_tracker.py --help
 python scripts/fetch_bilibili.py --help
 python scripts/fetch_wechat_article.py --help
-# 三个都应 rc=0 且无 traceback
+python scripts/fetch_social_comments.py --help
+# 四个都应 rc=0 且无 traceback
 ```
 
 ## 提交 PR
@@ -121,14 +122,14 @@ python scripts/fetch_wechat_article.py --help
 
 **命名约束（受 Agent Skills 规范限制）**：
 
-- `name` 字段 = `<skill 名>-<主版本>-<次版本>`，例如大版本 5、次版本 10 写作 `smart-buy-research-5-10`
+- `name` 字段 = `<skill 名>-<主版本>-<次版本>`，例如大版本 6、次版本 0 写作 `smart-buy-research-6-0`
 - 只允许 **小写字母、数字、连字符**；**点号 `.` 不被允许**
 - 不得以连字符开头/结尾；不得有连续连字符
 - **不得包含保留字**（`claude`、`anthropic` 等）
 - **`name` 必须与所在目录名完全一致**
 - `description` 上限 **1024 字符**
 
-> 文档与 `metadata.version` 中仍用标准写法 `5.10`；只有 `name` 与目录名需要写成 `5-10`。
+> 文档与 `metadata.version` 中仍用标准写法 `6.0`；只有 `name` 与目录名需要写成 `6-0`。
 
 ## 内容红线
 

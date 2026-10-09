@@ -42,7 +42,7 @@ Agent Skills 的核心设计是**分层加载**：不会一次性把所有内容
 ## 仓库目录树
 
 ```
-smart-buy-research-5-10/
+smart-buy-research-6-0/
 ├── .claude-plugin/                 # Claude Code 插件清单
 │   ├── marketplace.json            # 市场清单（name / owner / plugins）
 │   └── plugin.json                 # 插件清单（只需 name）
@@ -50,7 +50,7 @@ smart-buy-research-5-10/
 ├── references/                     # 按需加载的方法论（不进上下文）
 │   ├── methodology.md              # Step 1–5 完整工作流
 │   ├── sources-map.md              # 垃圾源黑名单 + 信息源地图 + 垂直社区对照表
-│   ├── scraping-playbook.md        # 受限平台获取方案（无头浏览器 / API / 反爬）
+│   ├── scraping-playbook.md        # 受限平台获取方案（无头浏览器 / API / 反爬 / 评论区读取）
 │   ├── price-and-channel.md        # 四平台比价 + 优惠券 + 国补（两条通道/封顶）+ 三包
 │   ├── review-analysis.md          # 水军识别 + 好评/差评读法 + 必要性分析
 │   ├── category-cheatsheets.md     # 品类专属避坑小抄
@@ -59,11 +59,13 @@ smart-buy-research-5-10/
 ├── scripts/                        # 可执行脚本（不占上下文）
 │   ├── price_tracker.py            # 到手价对比（标价陷阱/会员价/国补/单次成本）
 │   ├── fetch_wechat_article.py     # 微信公众号正文提取（免登录）
-│   └── fetch_bilibili.py           # B站数据获取（含 WBI 签名实现）
+│   ├── fetch_bilibili.py           # B站数据获取（含 WBI 签名实现）
+│   └── fetch_social_comments.py    # 评论区读取（旁观页面自己发出的接口 → 结构化 JSON）
 ├── tests/                          # 单元测试（纯标准库 unittest，不发真实请求）
 │   ├── test_price_tracker.py       # 国补封顶 / 渠道类型 / CLI 契约
 │   ├── test_fetch_bilibili.py      # WBI 签名 / 混淆表 / 参数校验
-│   ├── test_fetch_wechat_article.py# 正文提取 / 拦截图误判 / 实体反转义
+│   ├── test_fetch_wechat_article.py# 正文提取 / 拦截图误判 / 实体反转义 / 失败退出码
+│   ├── test_fetch_social_comments.py# 平台表 / 评论抽取 / 去重 / CLI 契约（全离线）
 │   └── test_validate_skill.py      # 校验器自身：目录同步 / 自指链接 / 锚点算法
 ├── tools/
 │   └── validate_skill.py           # 结构规范自检 + 发布前占位值清点（CI 也用它）
@@ -84,7 +86,7 @@ smart-buy-research-5-10/
 ├── SECURITY.md                     # 安全政策（含提示注入风险、撤回门槛）
 ├── CODE_OF_CONDUCT.md              # 贡献者公约（含本项目特有红线）
 ├── AGENTS.md                       # 给 AI 编码代理的仓库说明
-├── CHANGELOG.md                    # v1 → 5.10 版本演进
+├── CHANGELOG.md                    # v1 → 6.0 版本演进
 ├── CITATION.cff                    # 引用元数据
 ├── THIRD_PARTY_NOTICES.md          # 第三方声明（本项目无第三方代码依赖）
 ├── LICENSE                         # MIT
@@ -115,7 +117,7 @@ smart-buy-research-5-10/
 
 ```yaml
 ---
-name: smart-buy-research-5-10
+name: smart-buy-research-6-0
 description: ...
 ---
 ```
@@ -129,7 +131,7 @@ description: ...
 | `metadata` | `author` / `version` / `homepage` |
 
 **约束**：`name` 只允许小写字母、数字、连字符，**点号非法**，
-且**必须与目录名完全一致**。所以版本 `5.10` 写作 `5-10`。
+且**必须与目录名完全一致**。所以版本 `6.0` 写作 `6-0`。
 
 ## 加新内容的决策树
 

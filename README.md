@@ -1,12 +1,12 @@
 # Smart Buy Research · 全网口碑调研与购买决策
 
 <p>
-  <img alt="version" src="https://img.shields.io/badge/version-5.10-blue">
+  <img alt="version" src="https://img.shields.io/badge/version-6.0-blue">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-green">
   <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-yellow">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-brightgreen">
   <img alt="agent skills" src="https://img.shields.io/badge/Agent%20Skills-compatible-purple">
-  <img alt="tests" src="https://img.shields.io/badge/tests-123%20passing-brightgreen">
+  <img alt="tests" src="https://img.shields.io/badge/tests-155%20passing-brightgreen">
   <img alt="ci" src="https://github.com/ChaLunRon/smart-buy-research/actions/workflows/validate.yml/badge.svg">
 </p>
 
@@ -76,19 +76,19 @@
 
 ```bash
 git clone https://github.com/ChaLunRon/smart-buy-research.git \
-  ~/.workbuddy/skills/smart-buy-research-5-10
+  ~/.workbuddy/skills/smart-buy-research-6-0
 ```
 
 ```powershell
 # Windows
 git clone https://github.com/ChaLunRon/smart-buy-research.git `
-  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-5-10"
+  "$env:USERPROFILE\.workbuddy\skills\smart-buy-research-6-0"
 ```
 
-> - **目录名必须与 `SKILL.md` 里的 `name` 完全一致**（`smart-buy-research-5-10`），否则校验不通过。
->   `name` 里**不能出现点号**，所以版本 `5.10` 写作 `5-10`。
+> - **目录名必须与 `SKILL.md` 里的 `name` 完全一致**（`smart-buy-research-6-0`），否则校验不通过。
+>   `name` 里**不能出现点号**，所以版本 `6.0` 写作 `6-0`。
 > - **不想用 git？** 到 [Releases](https://github.com/ChaLunRon/smart-buy-research/releases) 下载
->   `smart-buy-research-5-10.zip`，解压后整个目录放进技能目录即可（包里顶层目录名已正确，**不要改名**）。
+>   `smart-buy-research-6-0.zip`，解压后整个目录放进技能目录即可（包里顶层目录名已正确，**不要改名**）。
 > - **Fork 到自己账号下**要同步改署名、`metadata.author`、`CITATION.cff`、`LICENSE`、
 >   所有 `github.com/<owner>/` 里的 owner 与邮箱；`tools/validate_skill.py` 第 12 项会清点残留占位符。
 
@@ -126,22 +126,25 @@ XX 和 YY 哪个好？
 
 ## 平台可读性实测
 
-**很多「读不到」其实只是少了真实浏览器。** 下表是 **2026-09 实测过的 4 个平台**：
+**很多「读不到」其实只是少了真实浏览器。** 下表是 **2026-09 / 2026-10 两轮实测**的结果：
 
-| 平台 | 纯 HTTP | 无头浏览器 | 结论 |
+| 平台 | 纯 HTTP | 真实浏览器 | 结论 |
 |---|---|---|---|
-| **B站** | 视频信息 API ✅；评论 ⚠️ 需 WBI 签名（已实现）；搜索 ❌ HTTP 412 风控 | ✅ | **可读**（搜索改用浏览器） |
-| **NGA** | ❌ 403 | ✅ | **完全可读** |
-| **微信公众号** | ✅ 直连可读正文 | ✅ | **可读**（免登录；但 `robots.txt` 禁爬，**必须低频、勿批量**） |
-| **小红书** | ❌ 302 跳登录 | ❌ 风控拦截（`error_code=300012`） | **受限**：判定在**网络出口**层；换网络或请用户提供内容 |
+| **B站** | 视频信息 API ✅；评论 ⚠️ 需 WBI 签名（脚本已实现）；搜索 ❌ HTTP 412 风控 | ✅ | **可读**（API 走脚本；搜索改用浏览器） |
+| **NGA** | ❌ 403「访客不能直接访问」 | ✅ **完全可读** | **可读**（首页/版面/帖子） |
+| **微信公众号** | ⚠️ 直连可读正文，但 `robots.txt` 禁爬；仅限本人低频读单篇 | ✅ | **有条件可读**（`scripts/fetch_wechat_article.py`） |
+| **豆瓣 / 什么值得买社区帖 / 黑猫投诉** | ✅ 可读（黑猫有真 JSON 接口） | ✅ | **可读** |
+| **贴吧 / 知乎** | ❌ 403 / 安全验证 | ❌ **仍被拦** | **受限** |
+| **微博** | ⚠️ 部分可读（搜索页要登录） | ❌ **仍被拦**（落到登录页） | **受限** |
+| **小红书** | ❌ 302 跳登录 | ❌ **风控拦截**（`error_code=300012`） | **受限** |
 
-> ⚠️ **没测过就不写「可读」。** 贴吧 / 知乎 / 微博**目前没有可读性实测记录** ——
-> 它们不在上表内，而这张表也**不是**「所有平台」的全集。这三处按
-> [references/sources-map.md](./references/sources-map.md) 的降级路径**现场试**，
-> 实测成功也只算「本次实测」，不要援引本表当结论。
+> 🔑 **贴吧 / 知乎 / 微博 / 小红书的失败不是「缺浏览器」，是「反爬拦截」。**
+> 2026-10 复测：装了真实浏览器后这四家**仍然**被挡在「百度安全验证」「知乎安全验证」
+> 「微博登录页」「小红书 300012」。出路只有两条：**换源**，或**用你自己的登录态**。
+> 完整实操见 [references/scraping-playbook.md](./references/scraping-playbook.md) **第九节**。
 
-降级顺序：`换源 → 换检索形态 → 无头浏览器 → 爬虫 → 用户协作`。**不要一上来就爬。**
-爬取受限平台前**必须取得用户明确同意并说明账号风险**；本 Skill 禁止未经同意的爬取，也禁止帮助规避平台规则。
+降级顺序：`换源 → 换检索形态 → 无头浏览器 → 读评论区 → 复用登录态 → 截图协作 → 用户提供信息`。
+**不要一上来就爬**；爬取受限平台前**必须取得用户明确同意并说明账号风险**，也禁止帮助规避平台规则。
 
 ---
 
@@ -161,16 +164,22 @@ python scripts/fetch_wechat_article.py "https://mp.weixin.qq.com/s/xxxxx"
 # 拿 B站视频信息 / 评论（评论走 WBI 签名）
 python scripts/fetch_bilibili.py info BV1GJ411x7h7
 python scripts/fetch_bilibili.py comments BV1GJ411x7h7 --pages 2 --mode 2   # mode 2 = 按时间
+
+# 读评论区（B站/微博/知乎/贴吧/小红书/抖音…）：先自检环境，再把评论取成结构化 JSON
+python scripts/fetch_social_comments.py --doctor
+python scripts/fetch_social_comments.py "https://www.bilibili.com/video/BV1GJ411x7h7" --out comments.json
 ```
 
-三个脚本均为**纯标准库**实现，无需 `pip install`；都支持 `--help`，参数错误时给**中文提示 + rc=2**、
+四个脚本均为**纯标准库**实现，无需 `pip install`（`fetch_social_comments.py` 另需一个真实浏览器，见下）；
+都支持 `--help`，参数错误时给**中文提示 + rc=2**、
 **不打印 traceback**（例如 `--pages 99` 会被截到 20 并说明原因，避免触发风控）。
 
 ## 依赖
 
 - **必需**：一个能读网页的 Agent 运行时（Claude / WorkBuddy 等）
 - **脚本**：Python 3.8+，纯标准库（CI 矩阵**实跑** 3.8 / 3.9 / 3.12，不是「应该能跑」）
-- **强烈建议**：无头浏览器。**不装的话 NGA 完全读不到，B站搜索页也读不到**（这两处只有浏览器路径）
+- **强烈建议**（读评论区时**必需**）：无头浏览器。**不装的话 NGA 完全读不到，B站搜索页也读不到**
+  （这两处只有浏览器路径），`scripts/fetch_social_comments.py` 也无法工作
   ```bash
   npm i agent-browser
   npx agent-browser install        # 首次需下载 Chrome for Testing（约 196 MB）
@@ -192,7 +201,7 @@ python scripts/fetch_bilibili.py comments BV1GJ411x7h7 --pages 2 --mode 2   # mo
 ## 项目结构
 
 遵循 Agent Skills 的**三层披露**：只把每次都用得到的放进 `SKILL.md`，其余按需加载 ——
-`references/`（8 个文件，方法论）· `scripts/`（3 个脚本）· `tests/`（4 个文件，123 个用例）·
+`references/`（8 个文件，方法论）· `scripts/`（4 个脚本）· `tests/`（5 个文件，155 个用例）·
 `tools/validate_skill.py`（结构自检）· `docs/`（贡献者文档）· `.github/`（模板 + 工作流 + 依赖更新）。
 
 **完整目录树、每个文件的职责、「新内容该放哪一层」的决策树**：
@@ -202,7 +211,7 @@ python scripts/fetch_bilibili.py comments BV1GJ411x7h7 --pages 2 --mode 2   # mo
 
 ```bash
 python tools/validate_skill.py .              # 结构规范自检（14 项）
-python -m unittest discover -s tests -v       # 123 个单元测试
+python -m unittest discover -s tests -v       # 155 个单元测试
 ```
 
 任一条不过即以退出码 1 结束，可直接当 CI 用；完整检查清单见
@@ -215,24 +224,25 @@ python -m unittest discover -s tests -v       # 123 个单元测试
 
 ## 版本历史
 
-工作版本 **5.10**；历史用 **git tag** 表达，不是并列的文件夹 —— 这样 `git log` / `git diff`
+工作版本 **6.0**；历史用 **git tag** 表达，不是并列的文件夹 —— 这样 `git log` / `git diff`
 才能看出每一步改了什么。
 
 | tag | 主题 |
 |---|---|
-| `5.10` | **当前版本**：安全入口修正 + 归档口径统一 |
+| `6.0` | **当前版本**：新增「自媒体内容与评论读取」能力 + 5.11 六项修正 |
+| `5.10` | 安全入口修正 + 归档口径统一 |
 | `5.9` | 对外文档与门面修正 |
 | `5.8` | MediaCrawler 集成加固 |
 
 > 其余 14 个 tag（`1.0` … `5.7`）与每一次的完整理由见 [CHANGELOG.md](./CHANGELOG.md)。
 > 每个 tag 都有对应的 **[Release](https://github.com/ChaLunRon/smart-buy-research/releases)**，
 > 附一个由该 tag **现算**的「解压即可用」zip。**安装请用它**，不要用 GitHub 为 tag 自动生成的
-> "Source code" 归档（顶层目录是 `smart-buy-research-5.10`，**点号**，与 `name` 的连字符写法不一致）。
+> "Source code" 归档（顶层目录是 `smart-buy-research-6.0`，**点号**，与 `name` 的连字符写法不一致）。
 
 ## 发布到 GitHub
 
 **仓库根 = 含 `SKILL.md` 的那一层**，不要把多个版本文件夹并排推上去。先自检，再
-`git push -u origin main`，最后**逐个推精确 tag**（`git push origin 5.10`）——
+`git push -u origin main`，最后**逐个推精确 tag**（`git push origin 6.0`）——
 ⚠️ **不要用 `git push --tags`**：它会把本地**全部** tag 一并推上去（包括临时打的），
 而本项目的纪律是**只推精确 ref**：多做的动作就多一分意外。
 
@@ -259,7 +269,10 @@ python -m unittest discover -s tests -v       # 123 个单元测试
 本项目的设计参考了以下开源项目的公开做法：**[anthropics/skills](https://github.com/anthropics/skills)**
 （Agent Skills 规范与三层披露结构）、**[obra/superpowers](https://github.com/obra/superpowers)**
 （技能即方法论、跨 Agent 兼容）、**[addyosmani/agent-skills](https://github.com/addyosmani/agent-skills)**
-（仓库级治理文件的完整度）。**本仓库不包含上述项目的任何代码。**
+（仓库级治理文件的完整度）。`scripts/fetch_social_comments.py` 的「**浏览器当签名黑盒**」原理
+参考了 **[NanmiCoder/MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)** 的公开做法
+（**未复制其代码** —— 本项目只「旁观页面自己发出的接口」，不实现任何签名算法）。
+**本仓库不包含上述项目的任何代码。**
 
 ## 引用
 

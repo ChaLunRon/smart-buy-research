@@ -42,7 +42,7 @@ ls SKILL.md       # 必须存在
 > 另外，若要支持 Claude Code 的 `/plugin marketplace add`，仓库根需要有
 > `.claude-plugin/marketplace.json` + `.claude-plugin/plugin.json`（本仓库已随附）。
 
-本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 5.10，
+本仓库已按此约定准备：随附的 git 仓库里，`main` 指向 6.0，
 历史版本各自打了 tag，`git log --oneline` 就能看到完整演进。
 
 ## 二、发布前必做
@@ -73,7 +73,7 @@ cd <仓库根，即含 SKILL.md 的那一层>
 
 git init -b main
 git add .
-git commit -m "Initial public release: 5.10"
+git commit -m "Initial public release: 6.0"
 git remote add origin https://github.com/ChaLunRon/smart-buy-research.git
 git push -u origin main
 ```
@@ -82,7 +82,7 @@ git push -u origin main
 
 ```bash
 git push -u origin main     # 1) 分支
-git push origin 5.10         # 2) 本轮新增的那个 tag，点名推
+git push origin 6.0         # 2) 本轮新增的那个 tag，点名推
 
 # 首次发布要把历史 tag 一起补齐时，先 `git tag` 核对清单，然后逐个推：
 #   git push origin 1.0
@@ -115,16 +115,16 @@ git push origin 5.10         # 2) 本轮新增的那个 tag，点名推
 **用 tag 表达历史，用 Release 提供下载。** 两者都做，各司其职：
 
 ```bash
-git tag 5.10                    # 轻量 tag，与仓库既有的 16 个 tag 同类
-git push origin 5.10
+git tag 6.0                     # 轻量 tag，与仓库既有的 17 个 tag 同类
+git push origin 6.0
 ```
 
-> **口径**：本仓库既有的 16 个 tag **全部是轻量 tag**（`git for-each-ref --format='%(objecttype)' refs/tags/`
+> **口径**：本仓库既有的 17 个 tag **全部是轻量 tag**（`git for-each-ref --format='%(objecttype)' refs/tags/`
 > 输出全是 `commit`，没有 `tag` 对象）。本文件此前写的 `git tag -a` 会打出**注解 tag** ——
 > 与既有 tag 不是同一种对象类型。**要么继续用轻量 tag（推荐，现状如此），要么整体重打**；
 > 只对新版本用注解 tag，会让两种对象类型混在同一个仓库里。
 
-- **tag** —— 读者 `git checkout 5.10` 就能拿到完整快照，仓库体积不膨胀。
+- **tag** —— 读者 `git checkout 6.0` 就能拿到完整快照，仓库体积不膨胀。
   这是**版本历史的权威表达**，也是 `git log` / `git diff` 能看出演进的前提。
 - **Release** —— 给「不想 clone 的人」一键下载。**本仓库已自动化**，见下。
 
@@ -134,7 +134,7 @@ git push origin 5.10
 
 推一个形如 `主.次` 的 tag，工作流会自动：
 
-1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-5-10`）；
+1. 从该 tag 的 `SKILL.md` 读出 `name`（如 `smart-buy-research-6-0`）；
 2. 用 `git archive --prefix=<name>/ <tag>` **从 tag 现算** zip；
 3. 自检这个 zip：顶层目录唯一且等于 `name`、含 `SKILL.md`、不含 `.git` 与缓存；
 4. 建 Release、把 zip 作为附件上传，Release notes 取 `CHANGELOG.md` 的对应小节。
@@ -216,8 +216,8 @@ GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**（�
 | `5.1` 起 | 与 tag 同名的 `## 5.x` |
 
 > ⚠️ **别拿 GitHub 为 tag 自动生成的 "Source code" 归档当安装包。**
-> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-5.10`（**点号**）；
-> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-5-10`。
+> 它的顶层目录是 `{仓库名}-{tag}`，即 `smart-buy-research-6.0`（**点号**）；
+> 而技能规范要求 `name` 与目录名一致、且**点号非法**，必须写成 `smart-buy-research-6-0`。
 > 下载 Release 里那个 zip 才是开箱即用的。
 
 ### 为什么 Packages 是空的
@@ -227,7 +227,7 @@ GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**（�
 它没有包管理器载体：
 
 - 仓库内没有 `pyproject.toml` / `setup.py` / `package.json` / `Dockerfile` / `requirements.txt`；
-- `scripts/` 下三个脚本**只用 Python 标准库**，用 `pip install` 分发对它们没有意义；
+- `scripts/` 下四个脚本**只用 Python 标准库**，用 `pip install` 分发对它们没有意义；
 - 把技能塞进某个注册表，反而要引入一层与「**零依赖**」定位相冲突的依赖。
 
 要让 Packages 非空，**唯一有真实价值的方向是容器镜像** —— 把无头浏览器与抓取工具链
@@ -243,9 +243,9 @@ GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**（�
 |---|---|
 | 把归档层（含多个版本文件夹）整个推上去 | GitHub 出现多份重复副本；`SKILL.md` 不在仓库根，技能无法被加载 |
 | 改了 `SKILL.md` 的 `name` 却没改目录名 | 规范校验不通过；安装后无法被识别 |
-| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-5-10` |
-| `name` 里写点号（`5.10`） | 规范只允许小写字母/数字/连字符，必须写 `5-10` |
-| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-5.10`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
+| clone 到与 `name` 不同的目录（如默认的 `smart-buy-research`） | 本地目录名对不上 `name`，校验不通过。**必须显式指定目标目录**：`git clone <url> ~/.workbuddy/skills/smart-buy-research-6-0` |
+| `name` 里写点号（`6.0`） | 规范只允许小写字母/数字/连字符，必须写 `6-0` |
+| 拿 GitHub 自动生成的 "Source code" 归档当安装包 | 顶层目录名是 `smart-buy-research-6.0`（**点号**），与 `name` 不符 → 校验不通过。请用 Release 里的 zip |
 | 把中文署名直接当 GitHub 登录名用 | GitHub 登录名只允许 ASCII，`https://github.com/<中文名>/...` **打不开**、徽章裂图。正文署名可以留中文，但**凡是填进 URL 的 owner 必须是 ASCII**；`validate_skill.py` 第 12 项会清点残留的模板占位符 |
 | 每个版本建一个新仓库 | 版本历史断成互不相干的仓库，无法 diff、无法追溯 |
 | 忘了推 tag | 本地有历史，GitHub 上只有最新一版 |
@@ -257,9 +257,9 @@ GitHub 不重算历史 run，修好之后那次失败**仍显示为失败**（�
 
 | 场合 | 写法 | 说明 |
 |---|---|---|
-| 文档正文 / `metadata.version` | `5.10` | 标准两级写法 |
-| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-5-10` | 规范禁止点号，必须用连字符 |
-| git tag | `5.10` 或 `v5.10` | 与 `metadata.version` 对齐最省事 |
+| 文档正文 / `metadata.version` | `6.0` | 标准两级写法 |
+| `name` 字段 / 目录名 / zip 文件名 | `smart-buy-research-6-0` | 规范禁止点号，必须用连字符 |
+| git tag | `6.0` 或 `v6.0` | 与 `metadata.version` 对齐最省事 |
 
 **三条命名必须完全一致**（zip 名 / 目录名 / `name` 字段），否则同时安装多个版本会触发名冲突。
 详见 [CONTRIBUTING.md](../CONTRIBUTING.md)。

@@ -8,6 +8,9 @@
 换源 → 换检索形态 → 无头浏览器 → 爬虫 → 用户协作
 ```
 
+> **要读的是"评论区"？直接看[第九节](#九评论区怎么读浏览器截获路线)。**
+> 评论几乎都走前端接口，`get text body` 这类"读正文"的做法在评论区经常落空。
+
 ## 目录
 
 - [零、两个独立难题：找社区 ≠ 读社区](#零两个独立难题找社区--读社区)
@@ -19,6 +22,7 @@
 - [六、用户协作](#六用户协作零依赖兜底)
 - [七、前置声明](#七前置声明用浏览器爬虫前必须执行)
 - [八、电商平台的反爬与比价](#八电商平台京东淘宝拼多多的反爬与比价)
+- [九、评论区怎么读（浏览器截获路线）](#九评论区怎么读浏览器截获路线) — **要读评论先看这节**：流量截获、现成脚本、登录态复用
 
 ---
 
@@ -53,30 +57,75 @@
 
 ### 怎么用
 
+**⚠️ 先读「前置条件」—— 这三条不满足，后面的命令一条都跑不通。**
+（2026-10-09 在**一台全新环境**上实测踩全了，见每条后面的实测记录。）
+
+| 前置条件 | 检查 | 不满足时怎么办 |
+|---|---|---|
+| **① Node.js** | `node -v` | 装 Node.js ≥ 18 |
+| **② agent-browser** | `npx agent-browser --version` | `npm i agent-browser`（装到当前目录即可，**不需要 -g**） |
+| **③ 一个 Chrome/Chromium** | `npx agent-browser --doctor` | 见下面的「Chrome 从哪来」 |
+
+> 🩺 **第一步永远是 `npx agent-browser --doctor`** —— 它一次性把环境、Chrome、
+> daemon、配置、launch 全查一遍，还会自动清理过期的 socket/pid 文件。
+> 加 `--json` 可给程序读，`--fix` 才会做破坏性修复（重装 Chrome、清旧状态）。
+
+#### Chrome 从哪来（实测最容易卡死的一步）
+
+**本机可能一个浏览器都没有**（2026-10-09 实测：全新环境里 Chrome / Edge / Chromium
+全部不存在）。两条出路：
+
 ```bash
-# 1. 装（一次性）
-#    注意：本机环境可能不允许 -g 全局安装，可改为装到当前目录
-npm i agent-browser
-npx agent-browser install          # 下载配套 Chrome（约 196MB / 205,149,043 字节）
+# 出路 A：让 agent-browser 自己下
+npx agent-browser install
+#   ⚠️ 实测：从 Google CDN 下载**重试 3 次全部超时**，6 分 06 秒后失败。
+#   改用手册下面给的 npmmirror 镜像，实测 207 MB / 74 秒 成功。
+
+# 出路 B：用本机已有的 Chrome（推荐，省掉下载）
+export AGENT_BROWSER_EXECUTABLE_PATH="/path/to/chrome"   # Windows 用 set / $env:
+npx agent-browser --doctor        # 确认它认了
+```
+
+#### 完整流程
+
+```bash
+# 0. 自检（每次开工先跑，10 秒）
+npx agent-browser --doctor
+
+# 1. 清掉可能残留的会话（daemon 在跑时会忽略部分命令行选项，必须先清）
+npx agent-browser close --all
 
 # 2. 开页面
 npx agent-browser open <url>
-npx agent-browser wait --load networkidle
+
+# 3. 读内容（⚠️ 别等 open 返回 —— 见下面「要点」第 1 条）
+npx agent-browser get title
 npx agent-browser get text body          # 读正文
 npx agent-browser screenshot out.png     # 或截图给人看
-npx agent-browser close                  # 收尾必须关
+
+# 4. 收尾必须关
+npx agent-browser close --all
 ```
 
 **要点**：
-- 每次页面变化后要重新 `snapshot`，ref（`@eN`）会失效
-- 用 `find placeholder "搜索" type "关键词"` 操作搜索框；**搜索框有时在屏幕外，先 `scroll down` 再操作**
-- 直接拼搜索 URL 比点搜索框可靠得多，例：
-  - B站：`https://search.bilibili.com/all?keyword={关键词}`
-  - 小红书：`https://www.xiaohongshu.com/search_result?keyword={关键词}`
-- **Chrome 下载慢时换镜像**（实测 npmmirror 比 Google CDN 快 12 倍）：
-  `https://registry.npmmirror.com/-/binary/chrome-for-testing/<版本>/win64/chrome-win64.zip`
-- 已有 Chrome 时用 `--executable-path <路径>` 或环境变量 `AGENT_BROWSER_EXECUTABLE_PATH`
-  **⚠️ 坑：daemon 已在运行时 `--executable-path` 会被忽略，必须先 `close --all`**
+
+1. ⚠️ **`open` 可能长时间不返回**（2026-10-09 实测：挂满 **6 分钟**才回来）。
+   这不代表失败 —— **此时 Chromium 已经启动、页面已经加载好了**。
+   正确做法：给 `open` 设个上限（如 `timeout 70`），或者干脆不等它，
+   **直接发后面的 `get` 命令**。
+2. ⚠️ **Chrome 下载慢或失败就换镜像**（实测 npmmirror 比 Google CDN 快 12 倍）：
+   `https://registry.npmmirror.com/-/binary/chrome-for-testing/<版本>/win64/chrome-win64.zip`
+   下载后解压，再把 `AGENT_BROWSER_EXECUTABLE_PATH` 指过去。
+3. 指定浏览器优先用**环境变量**而不是 `--executable-path`：
+   daemon 已在运行时命令行选项会被忽略，环境变量则在启动 daemon 时就被读到。
+4. 每次页面变化后要重新 `snapshot`，ref（`@eN`）会失效。
+5. 用 `find placeholder "搜索" type "关键词"` 操作搜索框；**搜索框有时在屏幕外，先 `scroll down` 再操作**。
+6. 直接拼搜索 URL 比点搜索框可靠得多，例：
+   - B站：`https://search.bilibili.com/all?keyword={关键词}`
+   - 小红书：`https://www.xiaohongshu.com/search_result?keyword={关键词}`
+7. 只想读数据、不想解析页面时，**优先看页面自己发出的接口**（比读 DOM 稳得多）：
+   见「九、评论区怎么读」——那里有 `network requests` / `network request <id>` 的完整用法。
+
 
 ### 各平台实测细节
 
@@ -109,6 +158,30 @@ npx agent-browser close                  # 收尾必须关
 - **这是 IP/网络环境级的风控判定，不是登录问题**，换 UA、换入口、用浏览器都无效
 - 网上「小红书网页版完全免登录」的说法**不成立** —— 无登录态时会被判为有风险（实测 `error_code=300012`），不要照抄
 - **只能靠**：① 换网络环境；② 用户截图/贴链接协作；③ 登录态（有账号风险）
+
+**⚠️ 其它平台也要实测，别想当然（2026-10 补充实测）**
+
+贴吧 / 知乎 / 微博**都装了真实浏览器**再测，结果仍然读不到，且**失败形态各不相同**：
+
+| 平台 | 真实浏览器下的实际结果 |
+|---|---|
+| 贴吧 | 落到「**百度安全验证**」 |
+| 知乎 | 落到「**知乎安全验证**」 |
+| 微博 | 落到**登录页** |
+| 小红书 | `error_code=300012`（与 2026-09 一致） |
+
+**🔑 这不是"缺浏览器"，是"反爬拦截"** —— 两者的出路完全不同：
+- 缺浏览器 → 装一个就好了
+- 反爬拦截 → **装什么都没用**。出路只有：换源；或走[第九节](#九评论区怎么读浏览器截获路线)的**登录态复用**（用你自己的账号读你自己有权看的内容）
+
+### ⚠️ `CERTIFICATE_VERIFY_FAILED` ≠ 站点读不到
+
+有些站点（实测：`gsxt.gov.cn`、`samr.gov.cn`、`chiphell.com`）用 Python 直接请求会报
+`CERTIFICATE_VERIFY_FAILED` / `SSLEOFError` / HTTP 521。**这是本机证书链或 TLS 环境的问题，
+不代表这个站点不能读。**
+
+**判读纪律**：见到证书类报错，**先换真实浏览器试一次**再下结论。
+把"我的环境有证书问题"写成"这个站点读不到"，会让结论凭空少掉一个信息源。
 
 ---
 
@@ -399,3 +472,134 @@ maishou / xiaxiayouhui（第三方 API，需用户同意）
 ```
 
 **核心纪律：电商数据的可信度优先级是"用户自己看到的" > "工具抓到的"。** 券和补贴这类会变的信息，永远让用户自己在页面上确认。
+
+---
+
+## 九、评论区怎么读（浏览器截获路线）
+
+**为什么单独讲评论**：本技能最值钱的样本就在评论区 —— **好评看雷同、差评看规律**，
+「问大家」这类商家难控评的地方更是如此。但评论有个共同难点：
+
+> **它几乎都走前端接口，而不是直接写在 HTML 里。**
+
+于是「读页面正文」那一招（`get text body`）在评论区经常落空。本节给的是**专门读评论**的做法。
+
+### 9.1 三条路线，按这个顺序试
+
+| | 路线 | 适合什么 | 代价 |
+|---|---|---|---|
+| **A** | **流量截获**（首选） | 评论由前端接口加载（B站/微博/知乎/小红书/抖音……） | 要有一个浏览器 |
+| **B** | **整页文本** | 评论**服务端直出**（NGA、部分传统论坛/社区） | 拿到的是文本，不是结构化字段 |
+| **C** | **登录态复用** | 上面两条都拿不到（页面自己都被登录墙挡住） | **有账号风险**，见 9.5 |
+
+### 9.2 路线 A 的原理：让浏览器自己算签名，我们只旁观
+
+平台接口基本都带**请求签名**（B站 `w_rid`、小红书 `X-s`、抖音 `a_bogus`、知乎 `x-zse-96`……），
+算法混淆、频繁更换。**这条路不去破解它** ——
+
+```
+页面自己的 JS 把签名算好 → 发出请求 → 我们只是"旁观"这次请求的响应
+```
+
+**我们一条签名代码都不写，也不做任何风控对抗。** 换来的好处：平台换签名算法，这套方法不受影响。
+
+`agent-browser` 自带两个命令干这件事：
+
+```bash
+# 1. 看页面自己发了哪些请求（含 requestId）
+agent-browser network requests --type xhr,fetch --json
+
+# 2. 按 requestId 取那一条的完整内容（含响应体）
+agent-browser network request <requestId> --json      # 响应体在 data.responseBody
+```
+
+`agent-browser network route` 是**改**请求（mock/拦截），**不要用它** —— 我们只需要旁观。
+
+### 9.3 用现成脚本（推荐，省掉手工步骤）
+
+```bash
+# 先自检环境（10 秒，别跳过）
+python scripts/fetch_social_comments.py --doctor
+
+# 取评论（默认按 URL 自动判断平台）
+python scripts/fetch_social_comments.py "https://www.bilibili.com/video/BV1pa4y1X7kv/" --out comments.json
+
+# 预设没命中的平台：先列出页面发出的全部 JSON 接口，再指定一条
+python scripts/fetch_social_comments.py "<url>" --list
+python scripts/fetch_social_comments.py "<url>" --request-id 13256.390 --out comments.json
+
+# 结构对不上时看原始响应体
+python scripts/fetch_social_comments.py "<url>" --raw --request-id 13256.390
+```
+
+脚本做的事就是路线 A 的自动化：打开页面 → 滚到底让评论按需加载 → 找到评论接口 →
+取响应体 → 抽取成规范评论 JSON（`text` / `author` / `like` / `time` / `id` / `reply_count`），
+按「(作者,正文)」去重、按赞数降序。
+
+**参数**：`--max-scrolls`（默认 8，评论多就加）、`--platform`（覆盖自动判断）、
+`--state`（登录态，见 9.5）、`-v`（打印底层命令）。
+
+**退出码**：`0` 成功｜`1` 环境/依赖问题｜`2` 参数错误｜`3` 打开了页面但没取到评论。
+**`3` 别当成功** —— 它意味着这次调研没有拿到评论，结论里也不能声称读到了。
+
+### 9.4 实测记录（2026-10-09）
+
+只记录**真跑过的**；没跑过的一律写「未实测」，不允许把「理论上可行」写成结论。
+
+| 平台 | 路线 A（截获接口） | 路线 B（整页文本） | 备注 |
+|---|---|---|---|
+| **B站** | ✅ **成功**。命中 `/x/v2/reply/wbi/main`，页面自己带 `w_rid` 签名；一次取到 4 条（含置顶），`cursor.all_count=230`；全程约 50 秒 | ⚠️ **不可靠**：评论是懒加载组件，滚到底后 `.reply-item` 仍为 0 | 已有免登录的 `fetch_bilibili.py`，**优先用它**，更省资源 |
+| **什么值得买**（社区帖） | ❌ 该页仅 5 个 XHR，评论不走前端接口 | （应用路线 B） | `--list` 如实报「预设未命中」，没有假装成功 |
+| 微博 / 知乎 / 贴吧 / 小红书 / 抖音 / 快手 | **未实测**（本机的 IP/环境被反爬拦住，页面自己都拿不到数据） | 未实测 | 平台预设已内置，但**归属「可尝试」，不是结论** |
+
+> 🔑 **关键区分**：微博/知乎/贴吧/小红书的失败**不是"缺浏览器"**，是**反爬拦截**。
+> 装更多工具也绕不过去 —— 换网络出口，或者走 9.5 复用你自己的登录态。
+
+### 9.5 路线 C：复用你自己的登录态（有账号风险，三道闸）
+
+登录墙挡住的页面，唯一干净的办法是**用你自己已经登录的浏览器** ——
+这不是绕过风控，而是「**用你自己的账号读你自己有权看的内容**」。
+
+```bash
+# ① 用你自己日常的 Chrome，带调试端口启动，像平时一样登录目标站点
+chrome --remote-debugging-port=9222
+
+# ② 把它的登录态（cookies + localStorage）导出成一个文件
+agent-browser --auto-connect state save ./my-auth.json
+
+# ③ 之后取数时带上它
+python scripts/fetch_social_comments.py "<url>" --state ./my-auth.json
+```
+
+等价做法：`--profile <目录>`（整个 Chrome 用户目录持久化）、
+`--session-name <名字>`（按名字自动存取，落在 `~/.agent-browser/sessions/`）。
+
+**三道闸（缺一不可，与方案七同一套纪律）：**
+
+1. **动工具前必须先取得用户明确同意**，并说明要登录哪些站点
+2. **必须告知账号风险**，并**建议用不重要的账号**
+3. **数据仅用于本次调研**，不外传
+
+**另外两条硬约束：**
+
+- ⚠️ `state save` 出来的 JSON **是明文凭据**（cookies + localStorage）。用完即删，
+  别提交进仓库、别贴给别人、别发给任何第三方服务。
+- ⚠️ `--remote-debugging-port` **等于把浏览器的完全控制权开在本地端口上**，
+  任何本机进程都能连上读 cookie。**只在自己的机器上用，用完就关。**
+
+> 本技能不做的事：不写签名算法、不处理验证码、不改写/伪造请求、不规避检测、不代购代理。
+> 能写的只有**操作细节**（怎么装、开关在哪、怎么传参），不写**绕行方法**。
+
+### 9.6 常见失败与判读
+
+| 现象 | 真正含义 | 怎么办 |
+|---|---|---|
+| 打开了页面，但 `--list` 一个 JSON 接口都没有 | 评论不走前端接口（服务端直出） | 走路线 B：`agent-browser get text body` |
+| 有接口，但 `--raw` 看到的是错误码 | 站点拦住了 —— **页面自己都没拿到** | 换源，或走 9.5 复用登录态 |
+| 响应体拿不到（空） | 请求在停止前还没返回 | 加大 `--max-scrolls`，滚到底再等一会儿 |
+| 抓到一堆接口但都不是评论 | 平台预设没命中 | `--list` 人工挑一条，用 `--request-id` |
+| 页面打开后标题是空的 | daemon 在自愈重启，页面白开了一次 | 脚本会自动重试；仍失败就跑 `--doctor` |
+
+**最后一条纪律**：拿不到评论**必须说出来**，并标注「仅获取到摘要 / 未获取到评论」。
+**"我打开了页面" ≠ "我读到了评论"。**
+

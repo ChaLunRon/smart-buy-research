@@ -168,7 +168,10 @@ def main(argv=None):
         with open(args.json, "w", encoding="utf-8") as f:
             json.dump(rec, f, ensure_ascii=False, indent=2)
         print("\n[saved]", args.json)
-    return 0
+
+    # 取不到正文必须给非零退出码：只打印警告就 return 0，
+    # 调用方（Agent）按退出码判断时会把"没取到"误当成"取到了"。
+    return 0 if rec.get("content") else 3
 
 
 if __name__ == "__main__":

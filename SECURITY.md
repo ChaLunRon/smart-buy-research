@@ -31,7 +31,7 @@
 
 ### 1. 脚本会访问网络
 
-`scripts/` 下三个脚本都会发起 HTTP 请求：
+`scripts/` 下四个脚本都会发起 HTTP 请求：
 
 | 脚本 | 目标 | 说明 |
 |---|---|---|
@@ -80,7 +80,8 @@ python scripts/price_tracker.py report --input records.json
 
 ## 依赖与供应链
 
-- 三个脚本**仅使用 Python 标准库**，无第三方依赖
+- 四个脚本**仅使用 Python 标准库**，无第三方依赖（`fetch_social_comments.py` 另需一个
+  真实浏览器，它只**旁观**页面自己发出的接口，不写签名算法、不做风控对抗）
 - 无 `requirements.txt`、无 `node_modules`（唯一的可选外部依赖是 `agent-browser`，由用户自行安装）
 - 因此本项目的供应链攻击面极小；请对任何"新增依赖"的 PR 保持警惕
 
